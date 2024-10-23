@@ -35,15 +35,18 @@ func main() {
 	router.POST("/register", controllers.Register) // User registration route
 	router.POST("/login", controllers.Login)
 
-	// Start handling WebSocket connections in the background
-	//go websocket.HandleMessages()
-
 	// Group of routes that require authentication
 	protected := router.Group("/user")
 	protected.Use(middlewares.Authenticate) // Apply the JWT authentication middleware
 
 	protected.POST("/profile", controllers.CreateProfile) // Update or create profile
 	protected.GET("/profile", controllers.GetProfile)     // Get profile
+
+	// Request API routes
+	protected.POST("/sendRequests", controllers.SendFriendRequest)
+	protected.POST("/acceptRequests", controllers.AcceptFriendRequest)
+	protected.POST("/rejectRequests", controllers.RejectFriendRequest)
+	protected.GET("/requests", controllers.GetPendingRequests)
 
 	// WebSocket routes
 	protected.GET("/ws", func(c *gin.Context) {
