@@ -39,14 +39,20 @@ func main() {
 	protected := router.Group("/user")
 	protected.Use(middlewares.Authenticate) // Apply the JWT authentication middleware
 
+	//APIs for user profile
 	protected.POST("/profile", controllers.CreateProfile) // Update or create profile
 	protected.GET("/profile", controllers.GetProfile)     // Get profile
 
-	// Request API routes
+	//APIs for requests
 	protected.POST("/sendRequests", controllers.SendFriendRequest)
 	protected.POST("/acceptRequests", controllers.AcceptFriendRequest)
 	protected.POST("/rejectRequests", controllers.RejectFriendRequest)
 	protected.GET("/requests", controllers.GetPendingRequests)
+
+	//APIs for the Questionnaire
+	protected.GET("/questionnaire", controllers.GetQuestionnaire)
+	protected.POST("/submitQuestionnaire", controllers.SubmitQuestionnaire)
+	protected.POST("/questionnaireAnswers/:user_id", controllers.GetUserAnswers)
 
 	// WebSocket routes
 	protected.GET("/ws", func(c *gin.Context) {
@@ -56,7 +62,7 @@ func main() {
 	// Start handling WebSocket connections in the background
 	go websocket.HandleMessages()
 
-	// Chat API routes
+	//APIs for the chat
 	protected.POST("/conversations", controllers.CreateConversation)
 	protected.GET("/conversations/:id/messages", controllers.GetChatHistory)
 
