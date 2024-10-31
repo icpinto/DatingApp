@@ -55,7 +55,9 @@ func HandleConnections(ctx *gin.Context) {
 	}
 
 	ws, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
+
 	if err != nil {
+
 		log.Fatal("Error upgrading to WebSocket:", err)
 	}
 	defer ws.Close()
@@ -87,13 +89,6 @@ func HandleMessages() {
 
 	for {
 		msg := <-broadcast
-		/*
-		   // Save message to the database
-		   message := models.ChatMessage{
-		       ConversationID: msg.ConversationID,
-		       SenderID:       msg.SenderID,
-		       Message:        msg.Message,
-		   }*/
 
 		_, err := db.DB.Exec(`
         INSERT INTO messages (conversation_id, sender_id, message, created_at)

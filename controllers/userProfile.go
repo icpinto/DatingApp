@@ -97,3 +97,74 @@ func GetProfile(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, profile)
 }
+
+func GetProfiles(ctx *gin.Context) {
+	db, exists := ctx.Get("db")
+	if !exists {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "database not found"})
+		return
+	}
+
+	// Query to get all profiles
+	rows, err := db.(*sql.DB).Query(`
+		SELECT id, user_id, bio, gender, date_of_birth, location, interests, created_at, updated_at
+		FROM profiles
+	`)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve profiles"})
+		return
+	}
+	defer rows.Close()
+
+	// Slice to hold all profiles
+	var profiles []models.Profile
+
+	// Iterate through the rows and scan each row into a Profile struct
+	for rows.Next() {
+		var profile models.Profile
+		err := rows.Scan(
+			&profile.ID, &profile.UserID, &profile.Bio, &profile.Gender,
+			&profile.DateOfBirth, &profile.Location, pq.Array(&profile.Interests),
+			&profile.CreatedAt, &profile.UpdatedAt,
+		)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan profile"})
+			return
+		}
+		profiles = append(profiles, profile)
+	}
+
+	// Check for any errors encountered during iteration
+	if err = rows.Err(); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Error during rows iteration"})
+		return
+	}
+
+	// Return the list of profiles as JSON
+	ctx.JSON(http.StatusOK, profiles)
+}
+
+func GetUserProfile(ctx *gin.Context) {
+	userID := ctx.Param("user_id")
+
+	db, exists := ctx.Get("db")
+	if !exists {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "database not found"})
+		return
+	}
+
+	var profile models.Profile
+	err := db.(*sql.DB).QueryRow(`
+		SELECT id, user_id, bio, gender, date_of_birth, location, interests, created_at, updated_at
+		FROM profiles WHERE user_id = $1`, userID).Scan(
+		&profile.ID, &profile.UserID, &profile.Bio, &profile.Gender,
+		&profile.DateOfBirth, &profile.Location, pq.Array(&profile.Interests),
+		&profile.CreatedAt, &profile.UpdatedAt)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve profile"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, profile)
+}

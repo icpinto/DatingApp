@@ -55,6 +55,7 @@ func Register(ctx *gin.Context) {
 func Login(ctx *gin.Context) {
 	var user models.User
 	var hashedPassword string
+	var userId int
 
 	db, exists := ctx.Get("db")
 	if !exists {
@@ -67,7 +68,7 @@ func Login(ctx *gin.Context) {
 		return
 	}
 
-	hashedPassword, err := services.GetUsepwd(user.Username, db.(*sql.DB))
+	hashedPassword, userId, err := services.GetUsepwd(user.Username, db.(*sql.DB))
 
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
@@ -89,6 +90,6 @@ func Login(ctx *gin.Context) {
 	}
 
 	// Return the token in the response
-	ctx.JSON(http.StatusOK, gin.H{"token": token})
+	ctx.JSON(http.StatusOK, gin.H{"token": token, "user_id": userId})
 
 }

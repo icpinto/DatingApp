@@ -63,6 +63,8 @@ func SendFriendRequest(ctx *gin.Context) {
 
 // AcceptFriendRequest accepts a friend request
 func AcceptFriendRequest(ctx *gin.Context) {
+	//userID := ctx.Param("user_id")
+
 	username, exists := ctx.Get("username")
 	if !exists {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})

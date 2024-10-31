@@ -3,7 +3,9 @@ package main
 import (
 	"database/sql"
 	"log"
+	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/icpinto/dating-app/controllers"
 	"github.com/icpinto/dating-app/internals/db"
@@ -29,6 +31,16 @@ func main() {
 	}
 
 	router := gin.Default()
+
+	// Use the CORS middleware with specific configuration
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 	// Apply the middleware to inject the db connection into the context
 	router.Use(middlewares.DBMiddleware(db))
 
@@ -40,8 +52,10 @@ func main() {
 	protected.Use(middlewares.Authenticate) // Apply the JWT authentication middleware
 
 	//APIs for user profile
-	protected.POST("/profile", controllers.CreateProfile) // Update or create profile
-	protected.GET("/profile", controllers.GetProfile)     // Get profile
+	protected.POST("/profile", controllers.CreateProfile)          // Update or create profile
+	protected.GET("/profile", controllers.GetProfile)              // Get profile
+	protected.GET("/profiles", controllers.GetProfiles)            // Get Active profiles
+	protected.GET("/profile/:user_id", controllers.GetUserProfile) // Get a USer profile
 
 	//APIs for requests
 	protected.POST("/sendRequests", controllers.SendFriendRequest)
@@ -55,7 +69,7 @@ func main() {
 	protected.POST("/questionnaireAnswers/:user_id", controllers.GetUserAnswers)
 
 	// WebSocket routes
-	protected.GET("/ws", func(c *gin.Context) {
+	router.GET("/ws/:token", middlewares.AuthenticateWS, func(c *gin.Context) {
 		websocket.HandleConnections(c)
 	})
 
@@ -63,8 +77,9 @@ func main() {
 	go websocket.HandleMessages()
 
 	//APIs for the chat
+	protected.GET("/conversations", controllers.GetAllConversations)
 	protected.POST("/conversations", controllers.CreateConversation)
-	protected.GET("/conversations/:id/messages", controllers.GetChatHistory)
+	protected.GET("/conversations/:id", controllers.GetChatHistory)
 
 	router.Run(":8080")
 

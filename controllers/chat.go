@@ -40,6 +40,51 @@ func CreateConversation(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Conversation created"})
 }
 
+// Retrieve all conversations
+func GetAllConversations(ctx *gin.Context) {
+	db, exists := ctx.Get("db")
+	if !exists {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "database not found"})
+		return
+	}
+
+	// Query to get all conversations
+	rows, err := db.(*sql.DB).Query(`
+		SELECT id, user1_id, user2_id, created_at 
+		FROM conversations
+	`)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve conversations"})
+		return
+	}
+	defer rows.Close()
+
+	// Slice to hold all profiles
+	var conversations []models.Conversation
+
+	// Iterate through the rows and scan each row into a conversation struct
+	for rows.Next() {
+		var conversation models.Conversation
+		err := rows.Scan(
+			&conversation.ID, &conversation.User1ID, &conversation.User2ID, &conversation.CreatedAt,
+		)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan conversation"})
+			return
+		}
+		conversations = append(conversations, conversation)
+	}
+
+	// Check for any errors encountered during iteration
+	if err = rows.Err(); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Error during rows iteration"})
+		return
+	}
+
+	// Return the list of conversations as JSON
+	ctx.JSON(http.StatusOK, conversations)
+}
+
 // Fetch chat history for a conversation
 func GetChatHistory(ctx *gin.Context) {
 	conversationID := ctx.Param("id")
@@ -51,7 +96,7 @@ func GetChatHistory(ctx *gin.Context) {
 	}
 
 	var messages []models.ChatMessage
-	rows, err := db.(*sql.DB).Query(`SELECT id, conversation_id, sender_id, message, created_at FROM messages WHERE conversation_id = $1 ORDER BY created_at ASC`, conversationID)
+	rows, err := db.(*sql.DB).Query(`SELECT conversation_id, sender_id, message, created_at FROM messages WHERE conversation_id = $1 ORDER BY created_at ASC`, conversationID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Could not fetch chat history"})
 		return
@@ -60,7 +105,7 @@ func GetChatHistory(ctx *gin.Context) {
 
 	for rows.Next() {
 		var msg models.ChatMessage
-		if err := rows.Scan(&msg.SenderID, &msg.ReceiverID, &msg.ConversationID, &msg.Message, &msg.CreatedAt); err != nil {
+		if err := rows.Scan(&msg.ConversationID, &msg.SenderID, &msg.Message, &msg.CreatedAt); err != nil {
 			log.Println(err)
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Error reading message"})
 			return
