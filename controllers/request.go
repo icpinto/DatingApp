@@ -170,3 +170,43 @@ func GetPendingRequests(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"requests": requests})
 }
+
+// check request status between two users
+func CheckReqStatus(ctx *gin.Context) {
+	// Extract username from context (authenticated user)
+	username, exists := ctx.Get("username")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	// Get the receiver ID from the route parameter
+	receiverID := ctx.Param("reciver_id")
+
+	// Get the sender's user ID based on the authenticated username
+	var senderID int
+	err := db.DB.QueryRow("SELECT id FROM users WHERE username = $1", username).Scan(&senderID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve sender ID"})
+		return
+	}
+
+	// Query to check if a friend request exists between the sender and receiver
+	var requestCount int
+	err = db.DB.QueryRow(`
+		SELECT COUNT(*) 
+		FROM friend_requests 
+		WHERE sender_id = $1 AND receiver_id = $2`,
+		senderID, receiverID).Scan(&requestCount)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve request status"})
+		return
+	}
+
+	// If requestCount > 0, a request has already been sent
+	requestSent := requestCount > 0
+
+	// Respond with the request status
+	ctx.JSON(http.StatusOK, gin.H{"requestStatus": requestSent})
+}

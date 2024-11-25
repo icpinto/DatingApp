@@ -58,10 +58,11 @@ func main() {
 	protected.GET("/profile/:user_id", controllers.GetUserProfile) // Get a USer profile
 
 	//APIs for requests
-	protected.POST("/sendRequests", controllers.SendFriendRequest)
+	protected.POST("/sendRequest", controllers.SendFriendRequest)
 	protected.POST("/acceptRequests", controllers.AcceptFriendRequest)
 	protected.POST("/rejectRequests", controllers.RejectFriendRequest)
 	protected.GET("/requests", controllers.GetPendingRequests)
+	protected.GET("/checkReqStatus/:reciver_id", controllers.CheckReqStatus)
 
 	//APIs for the Questionnaire
 	protected.GET("/questionnaire", controllers.GetQuestionnaire)
