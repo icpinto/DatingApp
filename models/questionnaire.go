@@ -8,9 +8,9 @@ type Question struct {
 }
 
 type Answer struct {
-	QuestionID  int
-	AnswerText  string
-	AnswerValue int
+	QuestionID  int    `json:"question_id"`
+	AnswerText  string `json:"answer_text"`
+	AnswerValue int    `json:"answer_value"`
 }
 
 type SubmitAnswersRequest struct {

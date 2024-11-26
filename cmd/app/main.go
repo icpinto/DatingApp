@@ -67,7 +67,7 @@ func main() {
 	//APIs for the Questionnaire
 	protected.GET("/questionnaire", controllers.GetQuestionnaire)
 	protected.POST("/submitQuestionnaire", controllers.SubmitQuestionnaire)
-	protected.POST("/questionnaireAnswers/:user_id", controllers.GetUserAnswers)
+	protected.GET("/questionnaireAnswers", controllers.GetUserAnswers)
 
 	// WebSocket routes
 	router.GET("/ws/:token", middlewares.AuthenticateWS, func(c *gin.Context) {

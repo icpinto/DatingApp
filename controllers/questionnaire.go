@@ -34,39 +34,38 @@ func GetQuestionnaire(ctx *gin.Context) {
 
 // SubmitQuestionnaire stores user answers in the database
 func SubmitQuestionnaire(ctx *gin.Context) {
-	userID, exists := ctx.Get("userID") // Extract user ID from JWT
+	username, exists := ctx.Get("username")
 	if !exists {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	var req models.SubmitAnswersRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
+	var answer models.Answer
+	if err := ctx.ShouldBindJSON(&answer); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
 		return
 	}
 
-	tx, err := db.DB.Begin() // Start a transaction
+	// Retrieve the user's ID from the users table
+	var userID int
+	err := db.DB.QueryRow("SELECT id FROM users WHERE username = $1", username).Scan(&userID)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start transaction"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "User not found"})
 		return
 	}
 
-	for _, answer := range req.Answers {
-		_, err := tx.Exec(`
-            INSERT INTO user_answers (user_id, question_id, answer_text, answer_value, created_at)
-            VALUES ($1, $2, $3, $4, $5)`,
-			userID, answer.QuestionID, answer.AnswerText, answer.AnswerValue, time.Now())
-
-		if err != nil {
-			tx.Rollback()
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to store answers"})
-			return
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit transaction"})
+	_, err = db.DB.Exec(`
+		INSERT INTO user_answers (user_id, question_id, answer_text, answer_value, created_at)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (user_id, question_id)
+		DO UPDATE SET
+			answer_text = EXCLUDED.answer_text,
+			answer_value = EXCLUDED.answer_value,
+			created_at = EXCLUDED.created_at`,
+		userID, answer.QuestionID, answer.AnswerText, answer.AnswerValue, time.Now())
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		//ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to Submit Answer"})
 		return
 	}
 
@@ -75,7 +74,19 @@ func SubmitQuestionnaire(ctx *gin.Context) {
 
 // GetUserAnswers retrieves the answers for a given user
 func GetUserAnswers(ctx *gin.Context) {
-	userID := ctx.Param("user_id")
+	username, exists := ctx.Get("username")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	// Retrieve the user's ID from the users table
+	var userID int
+	err := db.DB.QueryRow("SELECT id FROM users WHERE username = $1", username).Scan(&userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "User not found"})
+		return
+	}
 
 	rows, err := db.DB.Query(`
         SELECT question_id, answer_text, answer_value
