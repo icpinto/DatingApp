@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/icpinto/dating-app/internals/db"
 	"github.com/icpinto/dating-app/models"
 )
 
@@ -42,17 +43,25 @@ func CreateConversation(ctx *gin.Context) {
 
 // Retrieve all conversations
 func GetAllConversations(ctx *gin.Context) {
-	db, exists := ctx.Get("db")
+	username, exists := ctx.Get("username")
 	if !exists {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "database not found"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	var userID int
+	err := db.DB.QueryRow("SELECT id FROM users WHERE username = $1", username).Scan(&userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "User not found"})
 		return
 	}
 
 	// Query to get all conversations
-	rows, err := db.(*sql.DB).Query(`
-		SELECT id, user1_id, user2_id, created_at 
+	rows, err := db.DB.Query(`
+		SELECT id, user1_id, user2_id, created_at
 		FROM conversations
-	`)
+		WHERE user1_id = $1 OR user2_id = $1;
+	`, userID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve conversations"})
 		return

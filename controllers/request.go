@@ -66,8 +66,7 @@ func AcceptFriendRequest(ctx *gin.Context) {
 
 	var request models.AcceptRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err})
-		//ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -83,7 +82,31 @@ func AcceptFriendRequest(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Friend request accepted"})
+	// Fetch user1_id and user2_id from the friend_requests table
+	var user1ID, user2ID int
+	err = db.DB.QueryRow(`
+        SELECT sender_id, receiver_id
+        FROM friend_requests
+        WHERE id = $1
+    `, request.RequestID).Scan(&user1ID, &user2ID)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve friend request details"})
+		return
+	}
+
+	// Insert a new conversation into the conversations table
+	_, err = db.DB.Exec(`
+        INSERT INTO conversations (user1_id, user2_id)
+        VALUES ($1, $2)`,
+		user1ID, user2ID)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create conversation"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Friend request accepted and conversation created"})
 }
 
 // RejectFriendRequest rejects a friend request
