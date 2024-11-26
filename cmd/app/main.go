@@ -59,8 +59,8 @@ func main() {
 
 	//APIs for requests
 	protected.POST("/sendRequest", controllers.SendFriendRequest)
-	protected.POST("/acceptRequests", controllers.AcceptFriendRequest)
-	protected.POST("/rejectRequests", controllers.RejectFriendRequest)
+	protected.POST("/acceptRequest", controllers.AcceptFriendRequest)
+	protected.POST("/rejectRequest", controllers.RejectFriendRequest)
 	protected.GET("/requests", controllers.GetPendingRequests)
 	protected.GET("/checkReqStatus/:reciver_id", controllers.CheckReqStatus)
 

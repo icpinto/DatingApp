@@ -63,34 +63,20 @@ func SendFriendRequest(ctx *gin.Context) {
 
 // AcceptFriendRequest accepts a friend request
 func AcceptFriendRequest(ctx *gin.Context) {
-	//userID := ctx.Param("user_id")
 
-	username, exists := ctx.Get("username")
-	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-
-	var senderID int
-	err := db.DB.QueryRow("SELECT id FROM users WHERE username = $1", username).Scan(&senderID)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "User not found"})
-		return
-	}
-
-	//have to change logic here-----------------------
 	var request models.AcceptRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err})
+		//ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
 		return
 	}
 
 	// Update the friend request status to "accepted"
-	_, err = db.DB.Exec(`
+	_, err := db.DB.Exec(`
         UPDATE friend_requests
         SET status = $1, updated_at = $2
-        WHERE id = $3 AND receiver_id = $4 AND status = 'pending'`,
-		"accepted", time.Now(), request.RequestID, senderID)
+        WHERE id = $3 `,
+		"accepted", time.Now(), request.RequestID)
 
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to accept request"})
@@ -100,18 +86,13 @@ func AcceptFriendRequest(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Friend request accepted"})
 }
 
-// RejectFriendRequest rejects or cancels a friend request
+// RejectFriendRequest rejects a friend request
 func RejectFriendRequest(ctx *gin.Context) {
-	receiverID, exists := ctx.Get("userID") // Extract receiver ID from context (from JWT)
-	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-
-	//have to change logic here-----------------------
 	var request models.RejectRequest
+
+	// Parse and validate incoming JSON
 	if err := ctx.ShouldBindJSON(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data", "details": err.Error()})
 		return
 	}
 
@@ -119,15 +100,15 @@ func RejectFriendRequest(ctx *gin.Context) {
 	_, err := db.DB.Exec(`
         UPDATE friend_requests
         SET status = $1, updated_at = $2
-        WHERE id = $3 AND receiver_id = $4 AND status = 'pending'`,
-		"rejected", time.Now(), request.RequestID, receiverID)
+        WHERE id = $3`,
+		"rejected", time.Now(), request.RequestID)
 
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reject request"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reject request", "details": err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Friend request rejected"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "Friend request rejected successfully"})
 }
 
 // GetPendingRequests retrieves all pending friend requests for a user
@@ -146,13 +127,14 @@ func GetPendingRequests(ctx *gin.Context) {
 	}
 
 	rows, err := db.DB.Query(`
-        SELECT sender_id, status, created_at
+        SELECT id,sender_id, receiver_id, status, created_at
         FROM friend_requests
         WHERE receiver_id = $1 AND status = 'pending'`,
 		userID)
 
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve requests"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		//ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve requests"})
 		return
 	}
 	defer rows.Close()
@@ -160,7 +142,7 @@ func GetPendingRequests(ctx *gin.Context) {
 	var requests []models.FriendRequest
 	for rows.Next() {
 		var request models.FriendRequest
-		if err := rows.Scan(&request.SenderID, &request.Status, &request.CreatedAt); err != nil {
+		if err := rows.Scan(&request.RequestId, &request.SenderID, &request.ReceiverID, &request.Status, &request.CreatedAt); err != nil {
 			log.Println(err)
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan request data"})
 			return

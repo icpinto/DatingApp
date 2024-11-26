@@ -3,6 +3,7 @@ package models
 import "time"
 
 type FriendRequest struct {
+	RequestId  int       `json:"id"`
 	SenderID   int       `json:"sender_id"`
 	ReceiverID int       `json:"receiver_id"`
 	Status     string    `json:"status"`
@@ -11,9 +12,9 @@ type FriendRequest struct {
 }
 
 type AcceptRequest struct {
-	RequestID int `json:"request_id"`
+	RequestID int `json:"id"`
 }
 
 type RejectRequest struct {
-	RequestID int `json:"request_id"`
+	RequestID int `json:"id"`
 }

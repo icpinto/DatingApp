@@ -41,6 +41,7 @@ func CreateProfile(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 		return
 	}
+	profile.UserID = userID
 
 	// Insert or update the profile
 	_, err = db.(*sql.DB).Exec(`
