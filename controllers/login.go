@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"errors"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -29,23 +28,22 @@ func Register(ctx *gin.Context) {
 
 	var user models.User
 	if err := ctx.BindJSON(&user); err != nil {
-		log.Printf("Register bind error: %v", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		utils.RespondError(ctx, http.StatusBadRequest, err, "Register bind error", "Invalid input")
 		return
 	}
 
 	if err := userService.RegisterUser(user); err != nil {
 		if errors.Is(err, repositories.ErrDuplicateUser) {
-			log.Printf("Register duplicate user %s: %v", user.Username, err)
-			ctx.JSON(http.StatusConflict, gin.H{"error": "user already exists"})
+			logMsg := "Register duplicate user"
+			utils.RespondError(ctx, http.StatusConflict, err, logMsg, "user already exists")
 			return
 		}
-		log.Printf("Register service error for %s: %v", user.Username, err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "User creation failed"})
+		logMsg := "Register service error"
+		utils.RespondError(ctx, http.StatusInternalServerError, err, logMsg, "User creation failed")
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
+	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"message": "User registered successfully"})
 }
 
 func Login(ctx *gin.Context) {
@@ -56,8 +54,7 @@ func Login(ctx *gin.Context) {
 	var userId int
 
 	if err := ctx.BindJSON(&user); err != nil {
-		log.Printf("Login bind error: %v", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		utils.RespondError(ctx, http.StatusBadRequest, err, "Login bind error", "Invalid input")
 		return
 	}
 
@@ -65,32 +62,28 @@ func Login(ctx *gin.Context) {
 
 	if err != nil {
 		if errors.Is(err, repositories.ErrUserNotFound) {
-			log.Printf("Login user not found %s: %v", user.Username, err)
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+			utils.RespondError(ctx, http.StatusNotFound, err, "Login user not found", "user not found")
 			return
 		}
-		log.Printf("Login service error for %s: %v", user.Username, err)
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		utils.RespondError(ctx, http.StatusUnauthorized, err, "Login service error", "Invalid credentials")
 		return
 	}
 
 	// Compare hashed password with user input
 	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(user.Password))
 	if err != nil {
-		log.Printf("Login password mismatch for %s: %v", user.Username, err)
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		utils.RespondError(ctx, http.StatusUnauthorized, err, "Login password mismatch", "Invalid credentials")
 		return
 	}
 
 	// Generate JWT token
 	token, err := utils.GenerateToken(user.Username)
 	if err != nil {
-		log.Printf("Login token generation error for %s: %v", user.Username, err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Token generation failed"})
+		utils.RespondError(ctx, http.StatusInternalServerError, err, "Login token generation error", "Token generation failed")
 		return
 	}
 
 	// Return the token in the response
-	ctx.JSON(http.StatusOK, gin.H{"token": token, "user_id": userId})
+	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"token": token, "user_id": userId})
 
 }

@@ -2,26 +2,26 @@ package controllers
 
 import (
 	"errors"
-	"log"
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/icpinto/dating-app/models"
 	"github.com/icpinto/dating-app/services"
+	"github.com/icpinto/dating-app/utils"
 )
 
 func SendFriendRequest(ctx *gin.Context) {
 	username, exists := ctx.Get("username")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		utils.RespondError(ctx, http.StatusUnauthorized, nil, "SendFriendRequest unauthorized", "Unauthorized")
 		return
 	}
 
 	var request models.FriendRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
-		log.Printf("SendFriendRequest bind error: %v", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
+		utils.RespondError(ctx, http.StatusBadRequest, err, "SendFriendRequest bind error", "Invalid request data")
 		return
 	}
 
@@ -29,61 +29,59 @@ func SendFriendRequest(ctx *gin.Context) {
 
 	if err := frService.SendFriendRequest(username.(string), request); err != nil {
 		if errors.Is(err, services.ErrFriendRequestExists) {
-			log.Printf("SendFriendRequest duplicate between %s and %d: %v", username.(string), request.ReceiverID, err)
-			ctx.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			logMsg := fmt.Sprintf("SendFriendRequest duplicate between %s and %d", username.(string), request.ReceiverID)
+			utils.RespondError(ctx, http.StatusConflict, err, logMsg, err.Error())
 			return
 		}
-		log.Printf("SendFriendRequest service error for %s: %v", username.(string), err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		logMsg := fmt.Sprintf("SendFriendRequest service error for %s", username.(string))
+		utils.RespondError(ctx, http.StatusBadRequest, err, logMsg, err.Error())
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Friend request sent successfully"})
+	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"message": "Friend request sent successfully"})
 }
 
 func AcceptFriendRequest(ctx *gin.Context) {
 	var request models.AcceptRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
-		log.Printf("AcceptFriendRequest bind error: %v", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.RespondError(ctx, http.StatusBadRequest, err, "AcceptFriendRequest bind error", err.Error())
 		return
 	}
 
 	frService := ctx.MustGet("friendRequestService").(*services.FriendRequestService)
 
 	if err := frService.AcceptFriendRequest(request.RequestID); err != nil {
-		log.Printf("AcceptFriendRequest service error for request %d: %v", request.RequestID, err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to accept request"})
+		logMsg := fmt.Sprintf("AcceptFriendRequest service error for request %d", request.RequestID)
+		utils.RespondError(ctx, http.StatusInternalServerError, err, logMsg, "Failed to accept request")
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Friend request accepted and conversation created"})
+	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"message": "Friend request accepted and conversation created"})
 }
 
 func RejectFriendRequest(ctx *gin.Context) {
 	var request models.RejectRequest
 
 	if err := ctx.ShouldBindJSON(&request); err != nil {
-		log.Printf("RejectFriendRequest bind error: %v", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data", "details": err.Error()})
+		utils.RespondError(ctx, http.StatusBadRequest, err, "RejectFriendRequest bind error", "Invalid request data", err.Error())
 		return
 	}
 
 	frService := ctx.MustGet("friendRequestService").(*services.FriendRequestService)
 
 	if err := frService.RejectFriendRequest(request.RequestID); err != nil {
-		log.Printf("RejectFriendRequest service error for request %d: %v", request.RequestID, err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reject request", "details": err.Error()})
+		logMsg := fmt.Sprintf("RejectFriendRequest service error for request %d", request.RequestID)
+		utils.RespondError(ctx, http.StatusInternalServerError, err, logMsg, "Failed to reject request", err.Error())
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Friend request rejected successfully"})
+	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"message": "Friend request rejected successfully"})
 }
 
 func GetPendingRequests(ctx *gin.Context) {
 	username, exists := ctx.Get("username")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		utils.RespondError(ctx, http.StatusUnauthorized, nil, "GetPendingRequests unauthorized", "Unauthorized")
 		return
 	}
 
@@ -91,26 +89,25 @@ func GetPendingRequests(ctx *gin.Context) {
 
 	requests, err := frService.GetPendingRequests(username.(string))
 	if err != nil {
-		log.Printf("GetPendingRequests service error for %s: %v", username.(string), err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		logMsg := fmt.Sprintf("GetPendingRequests service error for %s", username.(string))
+		utils.RespondError(ctx, http.StatusInternalServerError, err, logMsg, err.Error())
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"requests": requests})
+	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"requests": requests})
 }
 
 func CheckReqStatus(ctx *gin.Context) {
 	username, exists := ctx.Get("username")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		utils.RespondError(ctx, http.StatusUnauthorized, nil, "CheckReqStatus unauthorized", "Unauthorized")
 		return
 	}
 
 	receiverIDParam := ctx.Param("reciver_id")
 	receiverID, err := strconv.Atoi(receiverIDParam)
 	if err != nil {
-		log.Printf("CheckReqStatus invalid receiver id: %v", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid receiver id"})
+		utils.RespondError(ctx, http.StatusBadRequest, err, "CheckReqStatus invalid receiver id", "Invalid receiver id")
 		return
 	}
 
@@ -118,10 +115,10 @@ func CheckReqStatus(ctx *gin.Context) {
 
 	requestSent, err := frService.CheckRequestStatus(username.(string), receiverID)
 	if err != nil {
-		log.Printf("CheckReqStatus service error for %s and %d: %v", username.(string), receiverID, err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve request status"})
+		logMsg := fmt.Sprintf("CheckReqStatus service error for %s and %d", username.(string), receiverID)
+		utils.RespondError(ctx, http.StatusInternalServerError, err, logMsg, "Failed to retrieve request status")
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"requestStatus": requestSent})
+	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"requestStatus": requestSent})
 }
