@@ -71,9 +71,9 @@ func (r *FriendRequestRepository) GetUsers(requestID int) (int, int, error) {
 // GetPending retrieves all pending friend requests for a user.
 func (r *FriendRequestRepository) GetPending(userID int) ([]models.FriendRequest, error) {
 	rows, err := r.db.Query(`
-        SELECT id, sender_id, receiver_id, status, created_at
-        FROM friend_requests
-        WHERE receiver_id = $1 AND status = 'pending'`, userID)
+       SELECT id, sender_id, receiver_id, status, created_at
+       FROM friend_requests
+       WHERE receiver_id = $1 AND status = 'pending'`, userID)
 	if err != nil {
 		log.Printf("FriendRequestRepository.GetPending query error for user %d: %v", userID, err)
 		return nil, err

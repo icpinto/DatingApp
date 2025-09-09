@@ -29,9 +29,9 @@ func (r *ConversationRepository) Create(user1ID, user2ID int) error {
 // GetByUserID retrieves all conversations for a user.
 func (r *ConversationRepository) GetByUserID(userID int) ([]models.Conversation, error) {
 	rows, err := r.db.Query(`
-                SELECT id, user1_id, user2_id, created_at
-                FROM conversations
-                WHERE user1_id = $1 OR user2_id = $1;`, userID)
+               SELECT id, user1_id, user2_id, created_at
+               FROM conversations
+               WHERE user1_id = $1 OR user2_id = $1;`, userID)
 	if err != nil {
 		log.Printf("ConversationRepository.GetByUserID query error for user %d: %v", userID, err)
 		return nil, err
