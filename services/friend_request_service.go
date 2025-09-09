@@ -10,10 +10,22 @@ import (
 	"github.com/icpinto/dating-app/repositories"
 )
 
+// ErrFriendRequestExists indicates a duplicate friend request.
 var ErrFriendRequestExists = errors.New("friend request already exists")
 
-func SendFriendRequest(db *sql.DB, username string, request models.FriendRequest) error {
-	senderID, err := repositories.GetUserIDByUsername(db, username)
+// FriendRequestService provides operations related to friend requests.
+type FriendRequestService struct {
+	db *sql.DB
+}
+
+// NewFriendRequestService creates a new FriendRequestService.
+func NewFriendRequestService(db *sql.DB) *FriendRequestService {
+	return &FriendRequestService{db: db}
+}
+
+// SendFriendRequest sends a friend request from a user to another.
+func (s *FriendRequestService) SendFriendRequest(username string, request models.FriendRequest) error {
+	senderID, err := repositories.GetUserIDByUsername(s.db, username)
 	if err != nil {
 		log.Printf("SendFriendRequest user lookup error for %s: %v", username, err)
 		return err
@@ -23,7 +35,7 @@ func SendFriendRequest(db *sql.DB, username string, request models.FriendRequest
 	request.CreatedAt = time.Now()
 	request.UpdatedAt = time.Now()
 
-	_, err = repositories.CheckExistingRequest(db, request.SenderID, request.ReceiverID)
+	_, err = repositories.CheckExistingRequest(s.db, request.SenderID, request.ReceiverID)
 	if err == nil {
 		log.Printf("SendFriendRequest duplicate for sender %d and receiver %d", request.SenderID, request.ReceiverID)
 		return ErrFriendRequestExists
@@ -32,45 +44,48 @@ func SendFriendRequest(db *sql.DB, username string, request models.FriendRequest
 		log.Printf("SendFriendRequest check existing error: %v", err)
 		return err
 	}
-	if err := repositories.InsertFriendRequest(db, request); err != nil {
+	if err := repositories.InsertFriendRequest(s.db, request); err != nil {
 		log.Printf("SendFriendRequest insert error for sender %d and receiver %d: %v", request.SenderID, request.ReceiverID, err)
 		return err
 	}
 	return nil
 }
 
-func AcceptFriendRequest(db *sql.DB, requestID int) error {
-	if err := repositories.UpdateFriendRequestStatus(db, requestID, "accepted", time.Now()); err != nil {
+// AcceptFriendRequest accepts a pending friend request.
+func (s *FriendRequestService) AcceptFriendRequest(requestID int) error {
+	if err := repositories.UpdateFriendRequestStatus(s.db, requestID, "accepted", time.Now()); err != nil {
 		log.Printf("AcceptFriendRequest update status error for request %d: %v", requestID, err)
 		return err
 	}
-	user1ID, user2ID, err := repositories.GetFriendRequestUsers(db, requestID)
+	user1ID, user2ID, err := repositories.GetFriendRequestUsers(s.db, requestID)
 	if err != nil {
 		log.Printf("AcceptFriendRequest get users error for request %d: %v", requestID, err)
 		return err
 	}
-	if err := repositories.CreateConversation(db, user1ID, user2ID); err != nil {
+	if err := repositories.CreateConversation(s.db, user1ID, user2ID); err != nil {
 		log.Printf("AcceptFriendRequest create conversation error for request %d: %v", requestID, err)
 		return err
 	}
 	return nil
 }
 
-func RejectFriendRequest(db *sql.DB, requestID int) error {
-	if err := repositories.UpdateFriendRequestStatus(db, requestID, "rejected", time.Now()); err != nil {
+// RejectFriendRequest rejects a pending friend request.
+func (s *FriendRequestService) RejectFriendRequest(requestID int) error {
+	if err := repositories.UpdateFriendRequestStatus(s.db, requestID, "rejected", time.Now()); err != nil {
 		log.Printf("RejectFriendRequest update status error for request %d: %v", requestID, err)
 		return err
 	}
 	return nil
 }
 
-func GetPendingRequests(db *sql.DB, username string) ([]models.FriendRequest, error) {
-	userID, err := repositories.GetUserIDByUsername(db, username)
+// GetPendingRequests retrieves all pending friend requests for a user.
+func (s *FriendRequestService) GetPendingRequests(username string) ([]models.FriendRequest, error) {
+	userID, err := repositories.GetUserIDByUsername(s.db, username)
 	if err != nil {
 		log.Printf("GetPendingRequests user lookup error for %s: %v", username, err)
 		return nil, err
 	}
-	requests, err := repositories.GetPendingRequests(db, userID)
+	requests, err := repositories.GetPendingRequests(s.db, userID)
 	if err != nil {
 		log.Printf("GetPendingRequests repository error for user %d: %v", userID, err)
 		return nil, err
@@ -78,13 +93,14 @@ func GetPendingRequests(db *sql.DB, username string) ([]models.FriendRequest, er
 	return requests, nil
 }
 
-func CheckRequestStatus(db *sql.DB, username string, receiverID int) (bool, error) {
-	senderID, err := repositories.GetUserIDByUsername(db, username)
+// CheckRequestStatus checks if a friend request exists between sender and receiver.
+func (s *FriendRequestService) CheckRequestStatus(username string, receiverID int) (bool, error) {
+	senderID, err := repositories.GetUserIDByUsername(s.db, username)
 	if err != nil {
 		log.Printf("CheckRequestStatus user lookup error for %s: %v", username, err)
 		return false, err
 	}
-	count, err := repositories.CountFriendRequests(db, senderID, receiverID)
+	count, err := repositories.CountFriendRequests(s.db, senderID, receiverID)
 	if err != nil {
 		log.Printf("CheckRequestStatus count error for sender %d and receiver %d: %v", senderID, receiverID, err)
 		return false, err

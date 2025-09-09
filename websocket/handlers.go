@@ -1,15 +1,14 @@
 package websocket
 
 import (
-	"database/sql"
 	"log"
 	"net/http"
 	"sync"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"github.com/icpinto/dating-app/internals/db"
 	"github.com/icpinto/dating-app/models"
+	"github.com/icpinto/dating-app/services"
 )
 
 var upgrader = websocket.Upgrader{
@@ -40,15 +39,8 @@ func HandleConnections(ctx *gin.Context) {
 		return
 	}
 
-	db, exists := ctx.Get("db")
-	if !exists {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "database not found"})
-		return
-	}
-
-	// Retrieve the user's ID from the users table
-	var userID int
-	err := db.(*sql.DB).QueryRow("SELECT id FROM users WHERE username = $1", username).Scan(&userID)
+	userService := ctx.MustGet("userService").(*services.UserService)
+	userID, err := userService.GetUserIDByUsername(username.(string))
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "User not found"})
 		return
@@ -85,19 +77,14 @@ func HandleConnections(ctx *gin.Context) {
 	}
 }
 
-func HandleMessages() {
+func HandleMessages(chatService *services.ChatService) {
 
 	for {
 		msg := <-broadcast
 
-		_, err := db.DB.Exec(`
-        INSERT INTO messages (conversation_id, sender_id, message, created_at)
-        VALUES ($1, $2, $3, NOW())`,
-			msg.ConversationID, msg.SenderID, msg.Message)
-
-		if err != nil {
+		if err := chatService.SaveMessage(msg); err != nil {
 			log.Printf("Error saving message to database: %v", err)
-			return
+			continue
 		}
 
 		// Find the recipient client (ReceiverID)

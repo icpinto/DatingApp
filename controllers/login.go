@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"database/sql"
 	"errors"
 	"log"
 	"net/http"
@@ -26,11 +25,7 @@ func init() {
 }*/
 
 func Register(ctx *gin.Context) {
-	db, exists := ctx.Get("db")
-	if !exists {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "database not found"})
-		return
-	}
+	userService := ctx.MustGet("userService").(*services.UserService)
 
 	var user models.User
 	if err := ctx.BindJSON(&user); err != nil {
@@ -39,7 +34,7 @@ func Register(ctx *gin.Context) {
 		return
 	}
 
-	if err := services.RegisterUser(db.(*sql.DB), user); err != nil {
+	if err := userService.RegisterUser(user); err != nil {
 		if errors.Is(err, repositories.ErrDuplicateUser) {
 			log.Printf("Register duplicate user %s: %v", user.Username, err)
 			ctx.JSON(http.StatusConflict, gin.H{"error": "user already exists"})
@@ -54,15 +49,11 @@ func Register(ctx *gin.Context) {
 }
 
 func Login(ctx *gin.Context) {
+	userService := ctx.MustGet("userService").(*services.UserService)
+
 	var user models.User
 	var hashedPassword string
 	var userId int
-
-	db, exists := ctx.Get("db")
-	if !exists {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "database not found"})
-		return
-	}
 
 	if err := ctx.BindJSON(&user); err != nil {
 		log.Printf("Login bind error: %v", err)
@@ -70,7 +61,7 @@ func Login(ctx *gin.Context) {
 		return
 	}
 
-	hashedPassword, userId, err := services.GetUsepwd(user.Username, db.(*sql.DB))
+	hashedPassword, userId, err := userService.GetUsepwd(user.Username)
 
 	if err != nil {
 		if errors.Is(err, repositories.ErrUserNotFound) {

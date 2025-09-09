@@ -65,3 +65,13 @@ func GetMessagesByConversationID(db *sql.DB, conversationID string) ([]models.Ch
 	}
 	return messages, nil
 }
+
+func SaveMessage(db *sql.DB, msg models.ChatMessage) error {
+	_, err := db.Exec(`
+        INSERT INTO messages (conversation_id, sender_id, message, created_at)
+        VALUES ($1, $2, $3, NOW())`, msg.ConversationID, msg.SenderID, msg.Message)
+	if err != nil {
+		log.Printf("SaveMessage exec error for conversation %d: %v", msg.ConversationID, err)
+	}
+	return err
+}

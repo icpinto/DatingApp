@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"database/sql"
 	"errors"
 	"log"
 	"net/http"
@@ -26,13 +25,9 @@ func SendFriendRequest(ctx *gin.Context) {
 		return
 	}
 
-	db, exists := ctx.Get("db")
-	if !exists {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "database not found"})
-		return
-	}
+	frService := ctx.MustGet("friendRequestService").(*services.FriendRequestService)
 
-	if err := services.SendFriendRequest(db.(*sql.DB), username.(string), request); err != nil {
+	if err := frService.SendFriendRequest(username.(string), request); err != nil {
 		if errors.Is(err, services.ErrFriendRequestExists) {
 			log.Printf("SendFriendRequest duplicate between %s and %d: %v", username.(string), request.ReceiverID, err)
 			ctx.JSON(http.StatusConflict, gin.H{"error": err.Error()})
@@ -54,13 +49,9 @@ func AcceptFriendRequest(ctx *gin.Context) {
 		return
 	}
 
-	db, exists := ctx.Get("db")
-	if !exists {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "database not found"})
-		return
-	}
+	frService := ctx.MustGet("friendRequestService").(*services.FriendRequestService)
 
-	if err := services.AcceptFriendRequest(db.(*sql.DB), request.RequestID); err != nil {
+	if err := frService.AcceptFriendRequest(request.RequestID); err != nil {
 		log.Printf("AcceptFriendRequest service error for request %d: %v", request.RequestID, err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to accept request"})
 		return
@@ -78,13 +69,9 @@ func RejectFriendRequest(ctx *gin.Context) {
 		return
 	}
 
-	db, exists := ctx.Get("db")
-	if !exists {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "database not found"})
-		return
-	}
+	frService := ctx.MustGet("friendRequestService").(*services.FriendRequestService)
 
-	if err := services.RejectFriendRequest(db.(*sql.DB), request.RequestID); err != nil {
+	if err := frService.RejectFriendRequest(request.RequestID); err != nil {
 		log.Printf("RejectFriendRequest service error for request %d: %v", request.RequestID, err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reject request", "details": err.Error()})
 		return
@@ -100,13 +87,9 @@ func GetPendingRequests(ctx *gin.Context) {
 		return
 	}
 
-	db, exists := ctx.Get("db")
-	if !exists {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "database not found"})
-		return
-	}
+	frService := ctx.MustGet("friendRequestService").(*services.FriendRequestService)
 
-	requests, err := services.GetPendingRequests(db.(*sql.DB), username.(string))
+	requests, err := frService.GetPendingRequests(username.(string))
 	if err != nil {
 		log.Printf("GetPendingRequests service error for %s: %v", username.(string), err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err})
@@ -131,13 +114,9 @@ func CheckReqStatus(ctx *gin.Context) {
 		return
 	}
 
-	db, exists := ctx.Get("db")
-	if !exists {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "database not found"})
-		return
-	}
+	frService := ctx.MustGet("friendRequestService").(*services.FriendRequestService)
 
-	requestSent, err := services.CheckRequestStatus(db.(*sql.DB), username.(string), receiverID)
+	requestSent, err := frService.CheckRequestStatus(username.(string), receiverID)
 	if err != nil {
 		log.Printf("CheckReqStatus service error for %s and %d: %v", username.(string), receiverID, err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve request status"})
