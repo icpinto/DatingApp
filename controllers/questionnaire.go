@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"database/sql"
 	"log"
 	"net/http"
 
@@ -11,13 +10,9 @@ import (
 )
 
 func GetQuestionnaire(ctx *gin.Context) {
-	db, exists := ctx.Get("db")
-	if !exists {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "database not found"})
-		return
-	}
+	questionnaireService := ctx.MustGet("questionnaireService").(*services.QuestionnaireService)
 
-	questions, err := services.GetQuestionnaire(db.(*sql.DB))
+	questions, err := questionnaireService.GetQuestionnaire()
 	if err != nil {
 		log.Printf("GetQuestionnaire service error: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch questions"})
@@ -40,13 +35,9 @@ func SubmitQuestionnaire(ctx *gin.Context) {
 		return
 	}
 
-	db, exists := ctx.Get("db")
-	if !exists {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "database not found"})
-		return
-	}
+	questionnaireService := ctx.MustGet("questionnaireService").(*services.QuestionnaireService)
 
-	if err := services.SubmitAnswer(db.(*sql.DB), username.(string), answer); err != nil {
+	if err := questionnaireService.SubmitAnswer(username.(string), answer); err != nil {
 		log.Printf("SubmitQuestionnaire service error for %s: %v", username.(string), err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to Submit Answer"})
 		return
@@ -62,13 +53,9 @@ func GetUserAnswers(ctx *gin.Context) {
 		return
 	}
 
-	db, exists := ctx.Get("db")
-	if !exists {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "database not found"})
-		return
-	}
+	questionnaireService := ctx.MustGet("questionnaireService").(*services.QuestionnaireService)
 
-	answers, err := services.GetUserAnswers(db.(*sql.DB), username.(string))
+	answers, err := questionnaireService.GetUserAnswers(username.(string))
 	if err != nil {
 		log.Printf("GetUserAnswers service error for %s: %v", username.(string), err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve answers"})

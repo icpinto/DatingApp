@@ -8,8 +8,19 @@ import (
 	"github.com/icpinto/dating-app/repositories"
 )
 
-func GetQuestionnaire(db *sql.DB) ([]models.Question, error) {
-	questions, err := repositories.GetQuestions(db)
+// QuestionnaireService handles questionnaire-related operations.
+type QuestionnaireService struct {
+	db *sql.DB
+}
+
+// NewQuestionnaireService creates a new QuestionnaireService.
+func NewQuestionnaireService(db *sql.DB) *QuestionnaireService {
+	return &QuestionnaireService{db: db}
+}
+
+// GetQuestionnaire retrieves all questions from the repository.
+func (s *QuestionnaireService) GetQuestionnaire() ([]models.Question, error) {
+	questions, err := repositories.GetQuestions(s.db)
 	if err != nil {
 		log.Printf("GetQuestionnaire service error: %v", err)
 		return nil, err
@@ -17,26 +28,28 @@ func GetQuestionnaire(db *sql.DB) ([]models.Question, error) {
 	return questions, nil
 }
 
-func SubmitAnswer(db *sql.DB, username string, answer models.Answer) error {
-	userID, err := repositories.GetUserIDByUsername(db, username)
+// SubmitAnswer stores or updates a user's answer.
+func (s *QuestionnaireService) SubmitAnswer(username string, answer models.Answer) error {
+	userID, err := repositories.GetUserIDByUsername(s.db, username)
 	if err != nil {
 		log.Printf("SubmitAnswer user lookup error for %s: %v", username, err)
 		return err
 	}
-	if err := repositories.UpsertAnswer(db, userID, answer); err != nil {
+	if err := repositories.UpsertAnswer(s.db, userID, answer); err != nil {
 		log.Printf("SubmitAnswer repository error for user %d question %d: %v", userID, answer.QuestionID, err)
 		return err
 	}
 	return nil
 }
 
-func GetUserAnswers(db *sql.DB, username string) ([]models.Answer, error) {
-	userID, err := repositories.GetUserIDByUsername(db, username)
+// GetUserAnswers retrieves all answers for a given user.
+func (s *QuestionnaireService) GetUserAnswers(username string) ([]models.Answer, error) {
+	userID, err := repositories.GetUserIDByUsername(s.db, username)
 	if err != nil {
 		log.Printf("GetUserAnswers user lookup error for %s: %v", username, err)
 		return nil, err
 	}
-	answers, err := repositories.GetAnswersByUserID(db, userID)
+	answers, err := repositories.GetAnswersByUserID(s.db, userID)
 	if err != nil {
 		log.Printf("GetUserAnswers repository error for user %d: %v", userID, err)
 		return nil, err

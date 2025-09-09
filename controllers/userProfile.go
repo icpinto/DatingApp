@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"database/sql"
 	"log"
 	"net/http"
 	"strconv"
@@ -18,11 +17,7 @@ func CreateProfile(ctx *gin.Context) {
 		return
 	}
 
-	db, exists := ctx.Get("db")
-	if !exists {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "database not found"})
-		return
-	}
+	profileService := ctx.MustGet("profileService").(*services.ProfileService)
 
 	var profile models.Profile
 	if err := ctx.BindJSON(&profile); err != nil {
@@ -31,7 +26,7 @@ func CreateProfile(ctx *gin.Context) {
 		return
 	}
 
-	if err := services.CreateOrUpdateProfile(db.(*sql.DB), username.(string), profile); err != nil {
+	if err := profileService.CreateOrUpdateProfile(username.(string), profile); err != nil {
 		log.Printf("CreateProfile service error for %s: %v", username.(string), err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update profile"})
 		return
@@ -47,13 +42,9 @@ func GetProfile(ctx *gin.Context) {
 		return
 	}
 
-	db, exists := ctx.Get("db")
-	if !exists {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "database not found"})
-		return
-	}
+	profileService := ctx.MustGet("profileService").(*services.ProfileService)
 
-	profile, err := services.GetProfile(db.(*sql.DB), username.(string))
+	profile, err := profileService.GetProfile(username.(string))
 	if err != nil {
 		log.Printf("GetProfile service error for %s: %v", username.(string), err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve profile"})
@@ -64,13 +55,9 @@ func GetProfile(ctx *gin.Context) {
 }
 
 func GetProfiles(ctx *gin.Context) {
-	db, exists := ctx.Get("db")
-	if !exists {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "database not found"})
-		return
-	}
+	profileService := ctx.MustGet("profileService").(*services.ProfileService)
 
-	profiles, err := services.GetProfiles(db.(*sql.DB))
+	profiles, err := profileService.GetProfiles()
 	if err != nil {
 		log.Printf("GetProfiles service error: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve profiles"})
@@ -82,11 +69,7 @@ func GetProfiles(ctx *gin.Context) {
 func GetUserProfile(ctx *gin.Context) {
 	userIDParam := ctx.Param("user_id")
 
-	db, exists := ctx.Get("db")
-	if !exists {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "database not found"})
-		return
-	}
+	profileService := ctx.MustGet("profileService").(*services.ProfileService)
 
 	userID, err := strconv.Atoi(userIDParam)
 	if err != nil {
@@ -95,7 +78,7 @@ func GetUserProfile(ctx *gin.Context) {
 		return
 	}
 
-	profile, err := services.GetProfileByUserID(db.(*sql.DB), userID)
+	profile, err := profileService.GetProfileByUserID(userID)
 	if err != nil {
 		log.Printf("GetUserProfile service error for user %d: %v", userID, err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve profile"})
