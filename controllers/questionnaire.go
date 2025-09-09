@@ -1,12 +1,13 @@
 package controllers
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/icpinto/dating-app/models"
 	"github.com/icpinto/dating-app/services"
+	"github.com/icpinto/dating-app/utils"
 )
 
 func GetQuestionnaire(ctx *gin.Context) {
@@ -14,42 +15,40 @@ func GetQuestionnaire(ctx *gin.Context) {
 
 	questions, err := questionnaireService.GetQuestionnaire()
 	if err != nil {
-		log.Printf("GetQuestionnaire service error: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch questions"})
+		utils.RespondError(ctx, http.StatusInternalServerError, err, "GetQuestionnaire service error", "Failed to fetch questions")
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"questions": questions})
+	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"questions": questions})
 }
 
 func SubmitQuestionnaire(ctx *gin.Context) {
 	username, exists := ctx.Get("username")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		utils.RespondError(ctx, http.StatusUnauthorized, nil, "SubmitQuestionnaire unauthorized", "Unauthorized")
 		return
 	}
 
 	var answer models.Answer
 	if err := ctx.ShouldBindJSON(&answer); err != nil {
-		log.Printf("SubmitQuestionnaire bind error: %v", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
+		utils.RespondError(ctx, http.StatusBadRequest, err, "SubmitQuestionnaire bind error", "Invalid request data")
 		return
 	}
 
 	questionnaireService := ctx.MustGet("questionnaireService").(*services.QuestionnaireService)
 
 	if err := questionnaireService.SubmitAnswer(username.(string), answer); err != nil {
-		log.Printf("SubmitQuestionnaire service error for %s: %v", username.(string), err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to Submit Answer"})
+		logMsg := fmt.Sprintf("SubmitQuestionnaire service error for %s", username.(string))
+		utils.RespondError(ctx, http.StatusInternalServerError, err, logMsg, "Failed to Submit Answer")
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Answers submitted successfully"})
+	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"message": "Answers submitted successfully"})
 }
 
 func GetUserAnswers(ctx *gin.Context) {
 	username, exists := ctx.Get("username")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		utils.RespondError(ctx, http.StatusUnauthorized, nil, "GetUserAnswers unauthorized", "Unauthorized")
 		return
 	}
 
@@ -57,10 +56,10 @@ func GetUserAnswers(ctx *gin.Context) {
 
 	answers, err := questionnaireService.GetUserAnswers(username.(string))
 	if err != nil {
-		log.Printf("GetUserAnswers service error for %s: %v", username.(string), err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve answers"})
+		logMsg := fmt.Sprintf("GetUserAnswers service error for %s", username.(string))
+		utils.RespondError(ctx, http.StatusInternalServerError, err, logMsg, "Failed to retrieve answers")
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"answers": answers})
+	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"answers": answers})
 }

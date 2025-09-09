@@ -1,11 +1,12 @@
 package controllers
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/icpinto/dating-app/services"
+	"github.com/icpinto/dating-app/utils"
 )
 
 func CreateConversation(ctx *gin.Context) {
@@ -17,24 +18,23 @@ func CreateConversation(ctx *gin.Context) {
 	}
 
 	if err := ctx.BindJSON(&req); err != nil {
-		log.Printf("CreateConversation bind error: %v", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		utils.RespondError(ctx, http.StatusBadRequest, err, "CreateConversation bind error", "Invalid input")
 		return
 	}
 
 	if err := chatService.CreateConversation(req.User1ID, req.User2ID); err != nil {
-		log.Printf("CreateConversation service error for users %d and %d: %v", req.User1ID, req.User2ID, err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create conversation"})
+		logMsg := fmt.Sprintf("CreateConversation service error for users %d and %d", req.User1ID, req.User2ID)
+		utils.RespondError(ctx, http.StatusInternalServerError, err, logMsg, "Failed to create conversation")
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Conversation created"})
+	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"message": "Conversation created"})
 }
 
 func GetAllConversations(ctx *gin.Context) {
 	username, exists := ctx.Get("username")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		utils.RespondError(ctx, http.StatusUnauthorized, nil, "GetAllConversations unauthorized", "Unauthorized")
 		return
 	}
 
@@ -42,12 +42,12 @@ func GetAllConversations(ctx *gin.Context) {
 
 	conversations, err := chatService.GetAllConversations(username.(string))
 	if err != nil {
-		log.Printf("GetAllConversations service error for %s: %v", username.(string), err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve conversations"})
+		logMsg := fmt.Sprintf("GetAllConversations service error for %s", username.(string))
+		utils.RespondError(ctx, http.StatusInternalServerError, err, logMsg, "Failed to retrieve conversations")
 		return
 	}
 
-	ctx.JSON(http.StatusOK, conversations)
+	utils.RespondSuccess(ctx, http.StatusOK, conversations)
 }
 
 func GetChatHistory(ctx *gin.Context) {
@@ -57,10 +57,10 @@ func GetChatHistory(ctx *gin.Context) {
 
 	messages, err := chatService.GetChatHistory(conversationID)
 	if err != nil {
-		log.Printf("GetChatHistory service error for conversation %s: %v", conversationID, err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Could not fetch chat history"})
+		logMsg := fmt.Sprintf("GetChatHistory service error for conversation %s", conversationID)
+		utils.RespondError(ctx, http.StatusInternalServerError, err, logMsg, "Could not fetch chat history")
 		return
 	}
 
-	ctx.JSON(http.StatusOK, messages)
+	utils.RespondSuccess(ctx, http.StatusOK, messages)
 }
