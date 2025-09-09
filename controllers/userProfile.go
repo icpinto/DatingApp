@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"database/sql"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -25,11 +26,13 @@ func CreateProfile(ctx *gin.Context) {
 
 	var profile models.Profile
 	if err := ctx.BindJSON(&profile); err != nil {
+		log.Printf("CreateProfile bind error: %v", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 		return
 	}
 
 	if err := services.CreateOrUpdateProfile(db.(*sql.DB), username.(string), profile); err != nil {
+		log.Printf("CreateProfile service error for %s: %v", username.(string), err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update profile"})
 		return
 	}
@@ -52,6 +55,7 @@ func GetProfile(ctx *gin.Context) {
 
 	profile, err := services.GetProfile(db.(*sql.DB), username.(string))
 	if err != nil {
+		log.Printf("GetProfile service error for %s: %v", username.(string), err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve profile"})
 		return
 	}
@@ -68,6 +72,7 @@ func GetProfiles(ctx *gin.Context) {
 
 	profiles, err := services.GetProfiles(db.(*sql.DB))
 	if err != nil {
+		log.Printf("GetProfiles service error: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve profiles"})
 		return
 	}
@@ -85,12 +90,14 @@ func GetUserProfile(ctx *gin.Context) {
 
 	userID, err := strconv.Atoi(userIDParam)
 	if err != nil {
+		log.Printf("GetUserProfile invalid user id: %v", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user id"})
 		return
 	}
 
 	profile, err := services.GetProfileByUserID(db.(*sql.DB), userID)
 	if err != nil {
+		log.Printf("GetUserProfile service error for user %d: %v", userID, err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve profile"})
 		return
 	}

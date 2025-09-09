@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"database/sql"
+	"errors"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -19,6 +21,7 @@ func SendFriendRequest(ctx *gin.Context) {
 
 	var request models.FriendRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
+		log.Printf("SendFriendRequest bind error: %v", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
 		return
 	}
@@ -30,6 +33,12 @@ func SendFriendRequest(ctx *gin.Context) {
 	}
 
 	if err := services.SendFriendRequest(db.(*sql.DB), username.(string), request); err != nil {
+		if errors.Is(err, services.ErrFriendRequestExists) {
+			log.Printf("SendFriendRequest duplicate between %s and %d: %v", username.(string), request.ReceiverID, err)
+			ctx.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			return
+		}
+		log.Printf("SendFriendRequest service error for %s: %v", username.(string), err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -40,6 +49,7 @@ func SendFriendRequest(ctx *gin.Context) {
 func AcceptFriendRequest(ctx *gin.Context) {
 	var request models.AcceptRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
+		log.Printf("AcceptFriendRequest bind error: %v", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -51,6 +61,7 @@ func AcceptFriendRequest(ctx *gin.Context) {
 	}
 
 	if err := services.AcceptFriendRequest(db.(*sql.DB), request.RequestID); err != nil {
+		log.Printf("AcceptFriendRequest service error for request %d: %v", request.RequestID, err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to accept request"})
 		return
 	}
@@ -62,6 +73,7 @@ func RejectFriendRequest(ctx *gin.Context) {
 	var request models.RejectRequest
 
 	if err := ctx.ShouldBindJSON(&request); err != nil {
+		log.Printf("RejectFriendRequest bind error: %v", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data", "details": err.Error()})
 		return
 	}
@@ -73,6 +85,7 @@ func RejectFriendRequest(ctx *gin.Context) {
 	}
 
 	if err := services.RejectFriendRequest(db.(*sql.DB), request.RequestID); err != nil {
+		log.Printf("RejectFriendRequest service error for request %d: %v", request.RequestID, err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reject request", "details": err.Error()})
 		return
 	}
@@ -95,6 +108,7 @@ func GetPendingRequests(ctx *gin.Context) {
 
 	requests, err := services.GetPendingRequests(db.(*sql.DB), username.(string))
 	if err != nil {
+		log.Printf("GetPendingRequests service error for %s: %v", username.(string), err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}
@@ -112,6 +126,7 @@ func CheckReqStatus(ctx *gin.Context) {
 	receiverIDParam := ctx.Param("reciver_id")
 	receiverID, err := strconv.Atoi(receiverIDParam)
 	if err != nil {
+		log.Printf("CheckReqStatus invalid receiver id: %v", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid receiver id"})
 		return
 	}
@@ -124,6 +139,7 @@ func CheckReqStatus(ctx *gin.Context) {
 
 	requestSent, err := services.CheckRequestStatus(db.(*sql.DB), username.(string), receiverID)
 	if err != nil {
+		log.Printf("CheckReqStatus service error for %s and %d: %v", username.(string), receiverID, err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve request status"})
 		return
 	}
