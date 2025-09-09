@@ -33,12 +33,12 @@ func (r *ProfileRepository) Upsert(profile models.Profile) error {
 }
 
 // GetByUserID retrieves a profile for the specified user ID.
-func (r *ProfileRepository) GetByUserID(userID int) (models.Profile, error) {
-	var profile models.Profile
+func (r *ProfileRepository) GetByUserID(userID int) (models.UserProfile, error) {
+	var profile models.UserProfile
 	err := r.db.QueryRow(`
-        SELECT id, user_id, bio, gender, date_of_birth, location, interests, created_at, updated_at
-        FROM profiles WHERE user_id = $1`, userID).Scan(
-		&profile.ID, &profile.UserID, &profile.Bio, &profile.Gender,
+       SELECT p.id, p.user_id, u.username, p.bio, p.gender, p.date_of_birth, p.location, p.interests, p.created_at, p.updated_at
+       FROM profiles p JOIN users u ON p.user_id = u.id WHERE p.user_id = $1`, userID).Scan(
+		&profile.ID, &profile.UserID, &profile.Username, &profile.Bio, &profile.Gender,
 		&profile.DateOfBirth, &profile.Location, pq.Array(&profile.Interests),
 		&profile.CreatedAt, &profile.UpdatedAt)
 	if err != nil {
@@ -48,21 +48,21 @@ func (r *ProfileRepository) GetByUserID(userID int) (models.Profile, error) {
 }
 
 // GetAll retrieves all profiles.
-func (r *ProfileRepository) GetAll() ([]models.Profile, error) {
+func (r *ProfileRepository) GetAll() ([]models.UserProfile, error) {
 	rows, err := r.db.Query(`
-                SELECT id, user_id, bio, gender, date_of_birth, location, interests, created_at, updated_at
-                FROM profiles`)
+               SELECT p.id, p.user_id, u.username, p.bio, p.gender, p.date_of_birth, p.location, p.interests, p.created_at, p.updated_at
+               FROM profiles p JOIN users u ON p.user_id = u.id`)
 	if err != nil {
 		log.Printf("ProfileRepository.GetAll query error: %v", err)
 		return nil, err
 	}
 	defer rows.Close()
 
-	var profiles []models.Profile
+	var profiles []models.UserProfile
 	for rows.Next() {
-		var profile models.Profile
+		var profile models.UserProfile
 		if err := rows.Scan(
-			&profile.ID, &profile.UserID, &profile.Bio, &profile.Gender,
+			&profile.ID, &profile.UserID, &profile.Username, &profile.Bio, &profile.Gender,
 			&profile.DateOfBirth, &profile.Location, pq.Array(&profile.Interests),
 			&profile.CreatedAt, &profile.UpdatedAt,
 		); err != nil {

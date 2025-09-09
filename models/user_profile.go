@@ -26,3 +26,8 @@ type Profile struct {
 	CreatedAt   string   `json:"created_at"`
 	UpdatedAt   string   `json:"updated_at"`
 }
+
+type UserProfile struct {
+	Profile
+	Username string `json:"username"`
+}
