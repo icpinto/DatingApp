@@ -35,22 +35,22 @@ func (s *ProfileService) CreateOrUpdateProfile(username string, profile models.P
 }
 
 // GetProfile retrieves a user's profile by username.
-func (s *ProfileService) GetProfile(username string) (models.Profile, error) {
+func (s *ProfileService) GetProfile(username string) (models.UserProfile, error) {
 	userID, err := repositories.GetUserIDByUsername(s.db, username)
 	if err != nil {
 		log.Printf("GetProfile user lookup error for %s: %v", username, err)
-		return models.Profile{}, err
+		return models.UserProfile{}, err
 	}
 	profile, err := s.repo.GetByUserID(userID)
 	if err != nil {
 		log.Printf("GetProfile repository error for user %d: %v", userID, err)
-		return models.Profile{}, err
+		return models.UserProfile{}, err
 	}
 	return profile, nil
 }
 
 // GetProfiles retrieves all profiles.
-func (s *ProfileService) GetProfiles() ([]models.Profile, error) {
+func (s *ProfileService) GetProfiles() ([]models.UserProfile, error) {
 	profiles, err := s.repo.GetAll()
 	if err != nil {
 		log.Printf("GetProfiles repository error: %v", err)
@@ -60,11 +60,11 @@ func (s *ProfileService) GetProfiles() ([]models.Profile, error) {
 }
 
 // GetProfileByUserID retrieves a profile by user ID.
-func (s *ProfileService) GetProfileByUserID(userID int) (models.Profile, error) {
+func (s *ProfileService) GetProfileByUserID(userID int) (models.UserProfile, error) {
 	profile, err := s.repo.GetByUserID(userID)
 	if err != nil {
 		log.Printf("GetProfileByUserID repository error for user %d: %v", userID, err)
-		return models.Profile{}, err
+		return models.UserProfile{}, err
 	}
 	return profile, nil
 }
