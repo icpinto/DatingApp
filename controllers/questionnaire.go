@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"database/sql"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -18,6 +19,7 @@ func GetQuestionnaire(ctx *gin.Context) {
 
 	questions, err := services.GetQuestionnaire(db.(*sql.DB))
 	if err != nil {
+		log.Printf("GetQuestionnaire service error: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch questions"})
 		return
 	}
@@ -33,6 +35,7 @@ func SubmitQuestionnaire(ctx *gin.Context) {
 
 	var answer models.Answer
 	if err := ctx.ShouldBindJSON(&answer); err != nil {
+		log.Printf("SubmitQuestionnaire bind error: %v", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
 		return
 	}
@@ -44,6 +47,7 @@ func SubmitQuestionnaire(ctx *gin.Context) {
 	}
 
 	if err := services.SubmitAnswer(db.(*sql.DB), username.(string), answer); err != nil {
+		log.Printf("SubmitQuestionnaire service error for %s: %v", username.(string), err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to Submit Answer"})
 		return
 	}
@@ -66,6 +70,7 @@ func GetUserAnswers(ctx *gin.Context) {
 
 	answers, err := services.GetUserAnswers(db.(*sql.DB), username.(string))
 	if err != nil {
+		log.Printf("GetUserAnswers service error for %s: %v", username.(string), err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve answers"})
 		return
 	}
