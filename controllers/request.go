@@ -2,16 +2,14 @@ package controllers
 
 import (
 	"database/sql"
-	"log"
 	"net/http"
-	"time"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/icpinto/dating-app/internals/db"
 	"github.com/icpinto/dating-app/models"
+	"github.com/icpinto/dating-app/services"
 )
 
-// SendFriendRequest sends a friend request
 func SendFriendRequest(ctx *gin.Context) {
 	username, exists := ctx.Get("username")
 	if !exists {
@@ -25,108 +23,56 @@ func SendFriendRequest(ctx *gin.Context) {
 		return
 	}
 
-	var senderID int
-	err := db.DB.QueryRow("SELECT id FROM users WHERE username = $1", username).Scan(&senderID)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "User not found"})
+	db, exists := ctx.Get("db")
+	if !exists {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "database not found"})
 		return
 	}
-	request.SenderID = senderID
-	request.Status = "pending"
-	request.CreatedAt = time.Now()
-	request.UpdatedAt = time.Now()
 
-	// Check if the request already exists
-	var existingStatus string
-	err = db.DB.QueryRow(`
-        SELECT status FROM friend_requests WHERE sender_id = $1 AND receiver_id = $2`,
-		request.SenderID, request.ReceiverID).Scan(&existingStatus)
-
-	if err == sql.ErrNoRows {
-		// No existing request, proceed to insert
-		_, err = db.DB.Exec(`
-            INSERT INTO friend_requests (sender_id, receiver_id, status, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5)`,
-			request.SenderID, request.ReceiverID, request.Status, request.CreatedAt, request.UpdatedAt)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send request"})
-			return
-		}
-		ctx.JSON(http.StatusOK, gin.H{"message": "Friend request sent successfully"})
-	} else if err == nil {
-		// If there’s already a request between the users
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Friend request already exists"})
-	} else {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check existing request"})
+	if err := services.SendFriendRequest(db.(*sql.DB), username.(string), request); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Friend request sent successfully"})
 }
 
-// AcceptFriendRequest accepts a friend request
 func AcceptFriendRequest(ctx *gin.Context) {
-
 	var request models.AcceptRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Update the friend request status to "accepted"
-	_, err := db.DB.Exec(`
-        UPDATE friend_requests
-        SET status = $1, updated_at = $2
-        WHERE id = $3 `,
-		"accepted", time.Now(), request.RequestID)
+	db, exists := ctx.Get("db")
+	if !exists {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "database not found"})
+		return
+	}
 
-	if err != nil {
+	if err := services.AcceptFriendRequest(db.(*sql.DB), request.RequestID); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to accept request"})
-		return
-	}
-
-	// Fetch user1_id and user2_id from the friend_requests table
-	var user1ID, user2ID int
-	err = db.DB.QueryRow(`
-        SELECT sender_id, receiver_id
-        FROM friend_requests
-        WHERE id = $1
-    `, request.RequestID).Scan(&user1ID, &user2ID)
-
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve friend request details"})
-		return
-	}
-
-	// Insert a new conversation into the conversations table
-	_, err = db.DB.Exec(`
-        INSERT INTO conversations (user1_id, user2_id)
-        VALUES ($1, $2)`,
-		user1ID, user2ID)
-
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create conversation"})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Friend request accepted and conversation created"})
 }
 
-// RejectFriendRequest rejects a friend request
 func RejectFriendRequest(ctx *gin.Context) {
 	var request models.RejectRequest
 
-	// Parse and validate incoming JSON
 	if err := ctx.ShouldBindJSON(&request); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data", "details": err.Error()})
 		return
 	}
 
-	// Update the friend request status to "rejected"
-	_, err := db.DB.Exec(`
-        UPDATE friend_requests
-        SET status = $1, updated_at = $2
-        WHERE id = $3`,
-		"rejected", time.Now(), request.RequestID)
+	db, exists := ctx.Get("db")
+	if !exists {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "database not found"})
+		return
+	}
 
-	if err != nil {
+	if err := services.RejectFriendRequest(db.(*sql.DB), request.RequestID); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reject request", "details": err.Error()})
 		return
 	}
@@ -134,7 +80,6 @@ func RejectFriendRequest(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Friend request rejected successfully"})
 }
 
-// GetPendingRequests retrieves all pending friend requests for a user
 func GetPendingRequests(ctx *gin.Context) {
 	username, exists := ctx.Get("username")
 	if !exists {
@@ -142,76 +87,46 @@ func GetPendingRequests(ctx *gin.Context) {
 		return
 	}
 
-	var userID int
-	err := db.DB.QueryRow("SELECT id FROM users WHERE username = $1", username).Scan(&userID)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "User not found"})
+	db, exists := ctx.Get("db")
+	if !exists {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "database not found"})
 		return
 	}
 
-	rows, err := db.DB.Query(`
-        SELECT id,sender_id, receiver_id, status, created_at
-        FROM friend_requests
-        WHERE receiver_id = $1 AND status = 'pending'`,
-		userID)
-
+	requests, err := services.GetPendingRequests(db.(*sql.DB), username.(string))
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err})
-		//ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve requests"})
 		return
-	}
-	defer rows.Close()
-
-	var requests []models.FriendRequest
-	for rows.Next() {
-		var request models.FriendRequest
-		if err := rows.Scan(&request.RequestId, &request.SenderID, &request.ReceiverID, &request.Status, &request.CreatedAt); err != nil {
-			log.Println(err)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan request data"})
-			return
-		}
-		requests = append(requests, request)
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"requests": requests})
 }
 
-// check request status between two users
 func CheckReqStatus(ctx *gin.Context) {
-	// Extract username from context (authenticated user)
 	username, exists := ctx.Get("username")
 	if !exists {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	// Get the receiver ID from the route parameter
-	receiverID := ctx.Param("reciver_id")
-
-	// Get the sender's user ID based on the authenticated username
-	var senderID int
-	err := db.DB.QueryRow("SELECT id FROM users WHERE username = $1", username).Scan(&senderID)
+	receiverIDParam := ctx.Param("reciver_id")
+	receiverID, err := strconv.Atoi(receiverIDParam)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve sender ID"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid receiver id"})
 		return
 	}
 
-	// Query to check if a friend request exists between the sender and receiver
-	var requestCount int
-	err = db.DB.QueryRow(`
-		SELECT COUNT(*) 
-		FROM friend_requests 
-		WHERE sender_id = $1 AND receiver_id = $2`,
-		senderID, receiverID).Scan(&requestCount)
+	db, exists := ctx.Get("db")
+	if !exists {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "database not found"})
+		return
+	}
 
+	requestSent, err := services.CheckRequestStatus(db.(*sql.DB), username.(string), receiverID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve request status"})
 		return
 	}
 
-	// If requestCount > 0, a request has already been sent
-	requestSent := requestCount > 0
-
-	// Respond with the request status
 	ctx.JSON(http.StatusOK, gin.H{"requestStatus": requestSent})
 }
