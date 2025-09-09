@@ -10,17 +10,18 @@ import (
 
 // QuestionnaireService handles questionnaire-related operations.
 type QuestionnaireService struct {
-	db *sql.DB
+	db   *sql.DB
+	repo *repositories.QuestionRepository
 }
 
 // NewQuestionnaireService creates a new QuestionnaireService.
 func NewQuestionnaireService(db *sql.DB) *QuestionnaireService {
-	return &QuestionnaireService{db: db}
+	return &QuestionnaireService{db: db, repo: repositories.NewQuestionRepository(db)}
 }
 
 // GetQuestionnaire retrieves all questions from the repository.
 func (s *QuestionnaireService) GetQuestionnaire() ([]models.Question, error) {
-	questions, err := repositories.GetQuestions(s.db)
+	questions, err := s.repo.GetAll()
 	if err != nil {
 		log.Printf("GetQuestionnaire service error: %v", err)
 		return nil, err
@@ -35,7 +36,7 @@ func (s *QuestionnaireService) SubmitAnswer(username string, answer models.Answe
 		log.Printf("SubmitAnswer user lookup error for %s: %v", username, err)
 		return err
 	}
-	if err := repositories.UpsertAnswer(s.db, userID, answer); err != nil {
+	if err := s.repo.UpsertAnswer(userID, answer); err != nil {
 		log.Printf("SubmitAnswer repository error for user %d question %d: %v", userID, answer.QuestionID, err)
 		return err
 	}
@@ -49,7 +50,7 @@ func (s *QuestionnaireService) GetUserAnswers(username string) ([]models.Answer,
 		log.Printf("GetUserAnswers user lookup error for %s: %v", username, err)
 		return nil, err
 	}
-	answers, err := repositories.GetAnswersByUserID(s.db, userID)
+	answers, err := s.repo.GetAnswersByUserID(userID)
 	if err != nil {
 		log.Printf("GetUserAnswers repository error for user %d: %v", userID, err)
 		return nil, err

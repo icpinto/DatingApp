@@ -10,17 +10,18 @@ import (
 
 // ChatService provides chat-related operations.
 type ChatService struct {
-	db *sql.DB
+	db   *sql.DB
+	repo *repositories.ConversationRepository
 }
 
 // NewChatService creates a new ChatService.
 func NewChatService(db *sql.DB) *ChatService {
-	return &ChatService{db: db}
+	return &ChatService{db: db, repo: repositories.NewConversationRepository(db)}
 }
 
 // CreateConversation creates a conversation between two users.
 func (s *ChatService) CreateConversation(user1ID, user2ID int) error {
-	if err := repositories.CreateConversation(s.db, user1ID, user2ID); err != nil {
+	if err := s.repo.Create(user1ID, user2ID); err != nil {
 		log.Printf("CreateConversation service error for users %d and %d: %v", user1ID, user2ID, err)
 		return err
 	}
@@ -34,7 +35,7 @@ func (s *ChatService) GetAllConversations(username string) ([]models.Conversatio
 		log.Printf("GetAllConversations user lookup error for %s: %v", username, err)
 		return nil, err
 	}
-	conversations, err := repositories.GetConversationsByUserID(s.db, userID)
+	conversations, err := s.repo.GetByUserID(userID)
 	if err != nil {
 		log.Printf("GetAllConversations fetch error for user %d: %v", userID, err)
 		return nil, err
@@ -44,7 +45,7 @@ func (s *ChatService) GetAllConversations(username string) ([]models.Conversatio
 
 // GetChatHistory retrieves messages for a conversation.
 func (s *ChatService) GetChatHistory(conversationID string) ([]models.ChatMessage, error) {
-	messages, err := repositories.GetMessagesByConversationID(s.db, conversationID)
+	messages, err := s.repo.GetMessages(conversationID)
 	if err != nil {
 		log.Printf("GetChatHistory service error for conversation %s: %v", conversationID, err)
 		return nil, err
@@ -54,7 +55,7 @@ func (s *ChatService) GetChatHistory(conversationID string) ([]models.ChatMessag
 
 // SaveMessage stores a chat message in the database.
 func (s *ChatService) SaveMessage(msg models.ChatMessage) error {
-	if err := repositories.SaveMessage(s.db, msg); err != nil {
+	if err := s.repo.SaveMessage(msg); err != nil {
 		log.Printf("SaveMessage service error for conversation %d: %v", msg.ConversationID, err)
 		return err
 	}
