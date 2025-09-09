@@ -35,16 +35,7 @@ func Register(ctx *gin.Context) {
 		return
 	}
 
-	// Hash the password before storing
-	hashedPassword, err := utils.HashPassword(user.Password)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Password hashing failed"})
-		return
-	}
-
-	// Insert the new user into the database
-	_, err = db.(*sql.DB).Exec("INSERT INTO users (username, email, password) VALUES ($1, $2, $3)", user.Username, user.Email, hashedPassword)
-	if err != nil {
+	if err := services.RegisterUser(db.(*sql.DB), user); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "User creation failed"})
 		return
 	}
