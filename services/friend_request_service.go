@@ -15,12 +15,14 @@ var ErrFriendRequestExists = errors.New("friend request already exists")
 
 // FriendRequestService provides operations related to friend requests.
 type FriendRequestService struct {
-	db *sql.DB
+	db        *sql.DB
+	repo      *repositories.FriendRequestRepository
+	convoRepo *repositories.ConversationRepository
 }
 
 // NewFriendRequestService creates a new FriendRequestService.
 func NewFriendRequestService(db *sql.DB) *FriendRequestService {
-	return &FriendRequestService{db: db}
+	return &FriendRequestService{db: db, repo: repositories.NewFriendRequestRepository(db), convoRepo: repositories.NewConversationRepository(db)}
 }
 
 // SendFriendRequest sends a friend request from a user to another.
@@ -35,7 +37,7 @@ func (s *FriendRequestService) SendFriendRequest(username string, request models
 	request.CreatedAt = time.Now()
 	request.UpdatedAt = time.Now()
 
-	_, err = repositories.CheckExistingRequest(s.db, request.SenderID, request.ReceiverID)
+	_, err = s.repo.CheckExisting(request.SenderID, request.ReceiverID)
 	if err == nil {
 		log.Printf("SendFriendRequest duplicate for sender %d and receiver %d", request.SenderID, request.ReceiverID)
 		return ErrFriendRequestExists
@@ -44,7 +46,7 @@ func (s *FriendRequestService) SendFriendRequest(username string, request models
 		log.Printf("SendFriendRequest check existing error: %v", err)
 		return err
 	}
-	if err := repositories.InsertFriendRequest(s.db, request); err != nil {
+	if err := s.repo.Create(request); err != nil {
 		log.Printf("SendFriendRequest insert error for sender %d and receiver %d: %v", request.SenderID, request.ReceiverID, err)
 		return err
 	}
@@ -53,16 +55,16 @@ func (s *FriendRequestService) SendFriendRequest(username string, request models
 
 // AcceptFriendRequest accepts a pending friend request.
 func (s *FriendRequestService) AcceptFriendRequest(requestID int) error {
-	if err := repositories.UpdateFriendRequestStatus(s.db, requestID, "accepted", time.Now()); err != nil {
+	if err := s.repo.UpdateStatus(requestID, "accepted", time.Now()); err != nil {
 		log.Printf("AcceptFriendRequest update status error for request %d: %v", requestID, err)
 		return err
 	}
-	user1ID, user2ID, err := repositories.GetFriendRequestUsers(s.db, requestID)
+	user1ID, user2ID, err := s.repo.GetUsers(requestID)
 	if err != nil {
 		log.Printf("AcceptFriendRequest get users error for request %d: %v", requestID, err)
 		return err
 	}
-	if err := repositories.CreateConversation(s.db, user1ID, user2ID); err != nil {
+	if err := s.convoRepo.Create(user1ID, user2ID); err != nil {
 		log.Printf("AcceptFriendRequest create conversation error for request %d: %v", requestID, err)
 		return err
 	}
@@ -71,7 +73,7 @@ func (s *FriendRequestService) AcceptFriendRequest(requestID int) error {
 
 // RejectFriendRequest rejects a pending friend request.
 func (s *FriendRequestService) RejectFriendRequest(requestID int) error {
-	if err := repositories.UpdateFriendRequestStatus(s.db, requestID, "rejected", time.Now()); err != nil {
+	if err := s.repo.UpdateStatus(requestID, "rejected", time.Now()); err != nil {
 		log.Printf("RejectFriendRequest update status error for request %d: %v", requestID, err)
 		return err
 	}
@@ -85,7 +87,7 @@ func (s *FriendRequestService) GetPendingRequests(username string) ([]models.Fri
 		log.Printf("GetPendingRequests user lookup error for %s: %v", username, err)
 		return nil, err
 	}
-	requests, err := repositories.GetPendingRequests(s.db, userID)
+	requests, err := s.repo.GetPending(userID)
 	if err != nil {
 		log.Printf("GetPendingRequests repository error for user %d: %v", userID, err)
 		return nil, err
@@ -100,7 +102,7 @@ func (s *FriendRequestService) CheckRequestStatus(username string, receiverID in
 		log.Printf("CheckRequestStatus user lookup error for %s: %v", username, err)
 		return false, err
 	}
-	count, err := repositories.CountFriendRequests(s.db, senderID, receiverID)
+	count, err := s.repo.Count(senderID, receiverID)
 	if err != nil {
 		log.Printf("CheckRequestStatus count error for sender %d and receiver %d: %v", senderID, receiverID, err)
 		return false, err

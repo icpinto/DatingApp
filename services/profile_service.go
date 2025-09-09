@@ -10,12 +10,13 @@ import (
 
 // ProfileService provides operations for user profiles.
 type ProfileService struct {
-	db *sql.DB
+	db   *sql.DB
+	repo *repositories.ProfileRepository
 }
 
 // NewProfileService creates a new ProfileService.
 func NewProfileService(db *sql.DB) *ProfileService {
-	return &ProfileService{db: db}
+	return &ProfileService{db: db, repo: repositories.NewProfileRepository(db)}
 }
 
 // CreateOrUpdateProfile creates or updates a user's profile.
@@ -26,7 +27,7 @@ func (s *ProfileService) CreateOrUpdateProfile(username string, profile models.P
 		return err
 	}
 	profile.UserID = userID
-	if err := repositories.UpsertProfile(s.db, profile); err != nil {
+	if err := s.repo.Upsert(profile); err != nil {
 		log.Printf("CreateOrUpdateProfile repository error for user %d: %v", userID, err)
 		return err
 	}
@@ -40,7 +41,7 @@ func (s *ProfileService) GetProfile(username string) (models.Profile, error) {
 		log.Printf("GetProfile user lookup error for %s: %v", username, err)
 		return models.Profile{}, err
 	}
-	profile, err := repositories.GetProfileByUserID(s.db, userID)
+	profile, err := s.repo.GetByUserID(userID)
 	if err != nil {
 		log.Printf("GetProfile repository error for user %d: %v", userID, err)
 		return models.Profile{}, err
@@ -50,7 +51,7 @@ func (s *ProfileService) GetProfile(username string) (models.Profile, error) {
 
 // GetProfiles retrieves all profiles.
 func (s *ProfileService) GetProfiles() ([]models.Profile, error) {
-	profiles, err := repositories.GetAllProfiles(s.db)
+	profiles, err := s.repo.GetAll()
 	if err != nil {
 		log.Printf("GetProfiles repository error: %v", err)
 		return nil, err
@@ -60,7 +61,7 @@ func (s *ProfileService) GetProfiles() ([]models.Profile, error) {
 
 // GetProfileByUserID retrieves a profile by user ID.
 func (s *ProfileService) GetProfileByUserID(userID int) (models.Profile, error) {
-	profile, err := repositories.GetProfileByUserID(s.db, userID)
+	profile, err := s.repo.GetByUserID(userID)
 	if err != nil {
 		log.Printf("GetProfileByUserID repository error for user %d: %v", userID, err)
 		return models.Profile{}, err
