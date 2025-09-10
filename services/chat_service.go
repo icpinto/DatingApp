@@ -21,7 +21,17 @@ func NewChatService(db *sql.DB) *ChatService {
 
 // CreateConversation creates a conversation between two users.
 func (s *ChatService) CreateConversation(user1ID, user2ID int) error {
-	if err := s.repo.Create(user1ID, user2ID); err != nil {
+	user1Username, err := repositories.GetUsernameByID(s.db, user1ID)
+	if err != nil {
+		log.Printf("CreateConversation user1 lookup error for %d: %v", user1ID, err)
+		return err
+	}
+	user2Username, err := repositories.GetUsernameByID(s.db, user2ID)
+	if err != nil {
+		log.Printf("CreateConversation user2 lookup error for %d: %v", user2ID, err)
+		return err
+	}
+	if err := s.repo.Create(user1ID, user1Username, user2ID, user2Username); err != nil {
 		log.Printf("CreateConversation service error for users %d and %d: %v", user1ID, user2ID, err)
 		return err
 	}

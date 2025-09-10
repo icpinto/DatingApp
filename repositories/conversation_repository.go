@@ -18,8 +18,10 @@ func NewConversationRepository(db *sql.DB) *ConversationRepository {
 }
 
 // Create starts a new conversation between two users.
-func (r *ConversationRepository) Create(user1ID, user2ID int) error {
-	_, err := r.db.Exec(`INSERT INTO conversations (user1_id, user2_id, created_at) VALUES ($1, $2, NOW())`, user1ID, user2ID)
+func (r *ConversationRepository) Create(user1ID int, user1Username string, user2ID int, user2Username string) error {
+	_, err := r.db.Exec(`
+            INSERT INTO conversations (user1_id, user1_username, user2_id, user2_username, created_at)
+            VALUES ($1, $2, $3, $4, NOW())`, user1ID, user1Username, user2ID, user2Username)
 	if err != nil {
 		log.Printf("ConversationRepository.Create exec error for users %d and %d: %v", user1ID, user2ID, err)
 	}
@@ -29,7 +31,7 @@ func (r *ConversationRepository) Create(user1ID, user2ID int) error {
 // GetByUserID retrieves all conversations for a user.
 func (r *ConversationRepository) GetByUserID(userID int) ([]models.Conversation, error) {
 	rows, err := r.db.Query(`
-               SELECT id, user1_id, user2_id, created_at
+               SELECT id, user1_id, user1_username, user2_id, user2_username, created_at
                FROM conversations
                WHERE user1_id = $1 OR user2_id = $1;`, userID)
 	if err != nil {
@@ -41,7 +43,7 @@ func (r *ConversationRepository) GetByUserID(userID int) ([]models.Conversation,
 	var conversations []models.Conversation
 	for rows.Next() {
 		var c models.Conversation
-		if err := rows.Scan(&c.ID, &c.User1ID, &c.User2ID, &c.CreatedAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.User1ID, &c.User1Username, &c.User2ID, &c.User2Username, &c.CreatedAt); err != nil {
 			log.Printf("ConversationRepository.GetByUserID scan error: %v", err)
 			return nil, err
 		}
