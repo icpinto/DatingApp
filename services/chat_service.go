@@ -50,6 +50,22 @@ func (s *ChatService) GetAllConversations(username string) ([]models.Conversatio
 		log.Printf("GetAllConversations fetch error for user %d: %v", userID, err)
 		return nil, err
 	}
+
+	for i := range conversations {
+		u1, err := repositories.GetUsernameByID(s.db, conversations[i].User1ID)
+		if err != nil {
+			log.Printf("GetAllConversations username lookup error for user %d: %v", conversations[i].User1ID, err)
+			return nil, err
+		}
+		u2, err := repositories.GetUsernameByID(s.db, conversations[i].User2ID)
+		if err != nil {
+			log.Printf("GetAllConversations username lookup error for user %d: %v", conversations[i].User2ID, err)
+			return nil, err
+		}
+		conversations[i].User1Username = u1
+		conversations[i].User2Username = u2
+	}
+
 	return conversations, nil
 }
 

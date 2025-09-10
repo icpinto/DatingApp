@@ -110,6 +110,22 @@ func (s *FriendRequestService) GetPendingRequests(username string) ([]models.Fri
 		log.Printf("GetPendingRequests repository error for user %d: %v", userID, err)
 		return nil, err
 	}
+
+	for i := range requests {
+		sender, err := repositories.GetUsernameByID(s.db, requests[i].SenderID)
+		if err != nil {
+			log.Printf("GetPendingRequests sender lookup error for user %d: %v", requests[i].SenderID, err)
+			return nil, err
+		}
+		receiver, err := repositories.GetUsernameByID(s.db, requests[i].ReceiverID)
+		if err != nil {
+			log.Printf("GetPendingRequests receiver lookup error for user %d: %v", requests[i].ReceiverID, err)
+			return nil, err
+		}
+		requests[i].SenderUsername = sender
+		requests[i].ReceiverUsername = receiver
+	}
+
 	return requests, nil
 }
 
