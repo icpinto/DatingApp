@@ -20,8 +20,10 @@ type Client struct {
 }
 
 type Conversation struct {
-	ID        int       `json:"id"`
-	User1ID   int       `json:"user1_id"`
-	User2ID   int       `json:"user2_id"`
-	CreatedAt time.Time `json:"created_at"`
+	ID            int       `json:"id"`
+	User1ID       int       `json:"user1_id"`
+	User1Username string    `json:"user1_username"`
+	User2ID       int       `json:"user2_id"`
+	User2Username string    `json:"user2_username"`
+	CreatedAt     time.Time `json:"created_at"`
 }

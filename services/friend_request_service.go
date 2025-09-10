@@ -33,9 +33,17 @@ func (s *FriendRequestService) SendFriendRequest(username string, request models
 		return err
 	}
 	request.SenderID = senderID
+	request.SenderUsername = username
 	request.Status = "pending"
 	request.CreatedAt = time.Now()
 	request.UpdatedAt = time.Now()
+
+	receiverUsername, err := repositories.GetUsernameByID(s.db, request.ReceiverID)
+	if err != nil {
+		log.Printf("SendFriendRequest receiver lookup error for %d: %v", request.ReceiverID, err)
+		return err
+	}
+	request.ReceiverUsername = receiverUsername
 
 	_, err = s.repo.CheckExisting(request.SenderID, request.ReceiverID)
 	if err == nil {
@@ -64,7 +72,17 @@ func (s *FriendRequestService) AcceptFriendRequest(requestID int) error {
 		log.Printf("AcceptFriendRequest get users error for request %d: %v", requestID, err)
 		return err
 	}
-	if err := s.convoRepo.Create(user1ID, user2ID); err != nil {
+	user1Username, err := repositories.GetUsernameByID(s.db, user1ID)
+	if err != nil {
+		log.Printf("AcceptFriendRequest user1 lookup error for %d: %v", user1ID, err)
+		return err
+	}
+	user2Username, err := repositories.GetUsernameByID(s.db, user2ID)
+	if err != nil {
+		log.Printf("AcceptFriendRequest user2 lookup error for %d: %v", user2ID, err)
+		return err
+	}
+	if err := s.convoRepo.Create(user1ID, user1Username, user2ID, user2Username); err != nil {
 		log.Printf("AcceptFriendRequest create conversation error for request %d: %v", requestID, err)
 		return err
 	}

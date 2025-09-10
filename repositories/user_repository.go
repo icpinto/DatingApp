@@ -55,3 +55,16 @@ func GetUserIDByUsername(db *sql.DB, username string) (int, error) {
 	}
 	return id, nil
 }
+
+func GetUsernameByID(db *sql.DB, userID int) (string, error) {
+	var username string
+	err := db.QueryRow("SELECT username FROM users WHERE id=$1", userID).Scan(&username)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", ErrUserNotFound
+		}
+		log.Printf("GetUsernameByID query error for %d: %v", userID, err)
+		return "", err
+	}
+	return username, nil
+}
