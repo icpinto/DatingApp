@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"log"
+	"strings"
 
 	"github.com/icpinto/dating-app/models"
 	"github.com/icpinto/dating-app/repositories"
@@ -33,9 +34,11 @@ func (s *ProfileService) CreateOrUpdateProfile(username string, profile models.P
 	}
 	profile.UserID = userID
 	if err := s.repo.Upsert(profile); err != nil {
-		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "22P02" {
-			log.Printf("CreateOrUpdateProfile invalid enum for user %d: %v", userID, pqErr)
-			return ErrInvalidEnum
+		if pqErr, ok := err.(*pq.Error); ok {
+			if pqErr.Code == "22P02" && strings.Contains(pqErr.Message, "invalid input value for enum") {
+				log.Printf("CreateOrUpdateProfile invalid enum for user %d: %v", userID, pqErr)
+				return ErrInvalidEnum
+			}
 		}
 		log.Printf("CreateOrUpdateProfile repository error for user %d: %v", userID, err)
 		return err

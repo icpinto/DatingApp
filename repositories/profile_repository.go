@@ -22,10 +22,10 @@ func NewProfileRepository(db *sql.DB) *ProfileRepository {
 // Upsert creates or updates a profile record.
 func (r *ProfileRepository) Upsert(profile models.Profile) error {
 	// Ensure metadata is valid JSON; default to empty object if not provided or invalid
-	metadata := []byte("{}")
+	metadata := "{}"
 	if profile.Metadata != "" {
 		if json.Valid([]byte(profile.Metadata)) {
-			metadata = []byte(profile.Metadata)
+			metadata = profile.Metadata
 		} else {
 			log.Printf("ProfileRepository.Upsert invalid metadata for user %d: %s", profile.UserID, profile.Metadata)
 		}
