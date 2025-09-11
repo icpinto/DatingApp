@@ -69,6 +69,8 @@ func setupRouter(sqlDB *sql.DB) (*gin.Engine, *services.ChatService) {
 	protected.GET("/profiles", controllers.GetProfiles)
 	protected.GET("/profile/:user_id", controllers.GetUserProfile)
 
+	router.GET("/profile/enums", controllers.GetProfileEnums)
+
 	protected.POST("/sendRequest", controllers.SendFriendRequest)
 	protected.POST("/acceptRequest", controllers.AcceptFriendRequest)
 	protected.POST("/rejectRequest", controllers.RejectFriendRequest)
