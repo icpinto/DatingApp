@@ -31,45 +31,52 @@ func (r *ProfileRepository) Upsert(profile models.Profile) error {
 		}
 	}
 
+	civilStatus := sql.NullString{String: profile.CivilStatus, Valid: profile.CivilStatus != ""}
+	dietaryPreference := sql.NullString{String: profile.DietaryPreference, Valid: profile.DietaryPreference != ""}
+	smoking := sql.NullString{String: profile.Smoking, Valid: profile.Smoking != ""}
+	alcohol := sql.NullString{String: profile.Alcohol, Valid: profile.Alcohol != ""}
+	highestEducation := sql.NullString{String: profile.HighestEducation, Valid: profile.HighestEducation != ""}
+	employmentStatus := sql.NullString{String: profile.EmploymentStatus, Valid: profile.EmploymentStatus != ""}
+
 	_, err := r.db.Exec(`
-        INSERT INTO profiles (
-            user_id, bio, gender, date_of_birth, location_legacy, interests, civil_status, religion, religion_detail,
-            caste, height_cm, weight_kg, dietary_preference, smoking, alcohol, languages,
-            country_code, province, district, city, postal_code,
-            highest_education, field_of_study, institution, employment_status, occupation,
-            father_occupation, mother_occupation, siblings_count, siblings,
-            horoscope_available, birth_time, birth_place, sinhala_raasi, nakshatra, horoscope,
-            profile_image_url, profile_image_thumb_url, verified, moderation_status, last_active_at, metadata)
-        VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-            $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
-            $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42)
-        ON CONFLICT (user_id)
-        DO UPDATE SET bio = EXCLUDED.bio, gender = EXCLUDED.gender, date_of_birth = EXCLUDED.date_of_birth,
-            location_legacy = EXCLUDED.location_legacy, interests = EXCLUDED.interests, civil_status = EXCLUDED.civil_status,
-            religion = EXCLUDED.religion, religion_detail = EXCLUDED.religion_detail, caste = EXCLUDED.caste,
-            height_cm = EXCLUDED.height_cm, weight_kg = EXCLUDED.weight_kg,
-            dietary_preference = EXCLUDED.dietary_preference, smoking = EXCLUDED.smoking, alcohol = EXCLUDED.alcohol,
-            languages = EXCLUDED.languages, country_code = EXCLUDED.country_code, province = EXCLUDED.province,
-            district = EXCLUDED.district, city = EXCLUDED.city, postal_code = EXCLUDED.postal_code,
-            highest_education = EXCLUDED.highest_education, field_of_study = EXCLUDED.field_of_study,
-            institution = EXCLUDED.institution, employment_status = EXCLUDED.employment_status,
-            occupation = EXCLUDED.occupation, father_occupation = EXCLUDED.father_occupation,
-            mother_occupation = EXCLUDED.mother_occupation, siblings_count = EXCLUDED.siblings_count,
-            siblings = EXCLUDED.siblings, horoscope_available = EXCLUDED.horoscope_available,
-            birth_time = EXCLUDED.birth_time, birth_place = EXCLUDED.birth_place,
-            sinhala_raasi = EXCLUDED.sinhala_raasi, nakshatra = EXCLUDED.nakshatra,
-            horoscope = EXCLUDED.horoscope,
-            profile_image_url = CASE WHEN EXCLUDED.profile_image_url <> '' THEN EXCLUDED.profile_image_url ELSE profiles.profile_image_url END,
-            profile_image_thumb_url = CASE WHEN EXCLUDED.profile_image_thumb_url <> '' THEN EXCLUDED.profile_image_thumb_url ELSE profiles.profile_image_thumb_url END,
-            verified = EXCLUDED.verified, moderation_status = EXCLUDED.moderation_status,
-            last_active_at = EXCLUDED.last_active_at, metadata = EXCLUDED.metadata,
-            updated_at = NOW()`,
+INSERT INTO profiles (
+user_id, bio, gender, date_of_birth, location_legacy, interests, civil_status, religion, religion_detail,
+caste, height_cm, weight_kg, dietary_preference, smoking, alcohol, languages,
+country_code, province, district, city, postal_code,
+highest_education, field_of_study, institution, employment_status, occupation,
+father_occupation, mother_occupation, siblings_count, siblings,
+horoscope_available, birth_time, birth_place, sinhala_raasi, nakshatra, horoscope,
+profile_image_url, profile_image_thumb_url, verified, moderation_status, last_active_at, metadata)
+VALUES (
+$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
+$17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
+$31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42)
+ON CONFLICT (user_id)
+DO UPDATE SET bio = EXCLUDED.bio, gender = EXCLUDED.gender, date_of_birth = EXCLUDED.date_of_birth,
+location_legacy = EXCLUDED.location_legacy, interests = EXCLUDED.interests, civil_status = EXCLUDED.civil_status,
+religion = EXCLUDED.religion, religion_detail = EXCLUDED.religion_detail, caste = EXCLUDED.caste,
+height_cm = EXCLUDED.height_cm, weight_kg = EXCLUDED.weight_kg,
+dietary_preference = EXCLUDED.dietary_preference, smoking = EXCLUDED.smoking, alcohol = EXCLUDED.alcohol,
+languages = EXCLUDED.languages, country_code = EXCLUDED.country_code, province = EXCLUDED.province,
+district = EXCLUDED.district, city = EXCLUDED.city, postal_code = EXCLUDED.postal_code,
+highest_education = EXCLUDED.highest_education, field_of_study = EXCLUDED.field_of_study,
+institution = EXCLUDED.institution, employment_status = EXCLUDED.employment_status,
+occupation = EXCLUDED.occupation, father_occupation = EXCLUDED.father_occupation,
+mother_occupation = EXCLUDED.mother_occupation, siblings_count = EXCLUDED.siblings_count,
+siblings = EXCLUDED.siblings, horoscope_available = EXCLUDED.horoscope_available,
+birth_time = EXCLUDED.birth_time, birth_place = EXCLUDED.birth_place,
+sinhala_raasi = EXCLUDED.sinhala_raasi, nakshatra = EXCLUDED.nakshatra,
+horoscope = EXCLUDED.horoscope,
+profile_image_url = CASE WHEN EXCLUDED.profile_image_url <> '' THEN EXCLUDED.profile_image_url ELSE profiles.profile_image_url END,
+profile_image_thumb_url = CASE WHEN EXCLUDED.profile_image_thumb_url <> '' THEN EXCLUDED.profile_image_thumb_url ELSE profiles.profile_image_thumb_url END,
+verified = EXCLUDED.verified, moderation_status = EXCLUDED.moderation_status,
+last_active_at = EXCLUDED.last_active_at, metadata = EXCLUDED.metadata,
+updated_at = NOW()`,
 		profile.UserID, profile.Bio, profile.Gender, profile.DateOfBirth, profile.LocationLegacy,
-		pq.Array(profile.Interests), profile.CivilStatus, profile.Religion, profile.ReligionDetail,
-		profile.Caste, profile.HeightCM, profile.WeightKG, profile.DietaryPreference, profile.Smoking, profile.Alcohol,
+		pq.Array(profile.Interests), civilStatus, profile.Religion, profile.ReligionDetail,
+		profile.Caste, profile.HeightCM, profile.WeightKG, dietaryPreference, smoking, alcohol,
 		pq.Array(profile.Languages), profile.CountryCode, profile.Province, profile.District, profile.City, profile.PostalCode,
-		profile.HighestEducation, profile.FieldOfStudy, profile.Institution, profile.EmploymentStatus, profile.Occupation,
+		highestEducation, profile.FieldOfStudy, profile.Institution, employmentStatus, profile.Occupation,
 		profile.FatherOccupation, profile.MotherOccupation, profile.SiblingsCount, profile.Siblings,
 		profile.HoroscopeAvailable, profile.BirthTime, profile.BirthPlace, profile.SinhalaRaasi, profile.Nakshatra, profile.Horoscope,
 		profile.ProfileImageURL, profile.ProfileImageThumbURL, profile.Verified, profile.ModerationStatus,

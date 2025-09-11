@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -87,7 +88,13 @@ func CreateProfile(ctx *gin.Context) {
 
 	if err := profileService.CreateOrUpdateProfile(username.(string), profile); err != nil {
 		logMsg := fmt.Sprintf("CreateProfile service error for %s", username.(string))
-		utils.RespondError(ctx, http.StatusInternalServerError, err, logMsg, "Failed to update profile")
+		status := http.StatusInternalServerError
+		clientMsg := "Failed to update profile"
+		if errors.Is(err, services.ErrInvalidEnum) {
+			status = http.StatusBadRequest
+			clientMsg = "Invalid profile data"
+		}
+		utils.RespondError(ctx, status, err, logMsg, clientMsg)
 		return
 	}
 
