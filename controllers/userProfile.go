@@ -27,8 +27,14 @@ func CreateProfile(ctx *gin.Context) {
 	profile.Bio = ctx.PostForm("bio")
 	profile.Gender = ctx.PostForm("gender")
 	profile.DateOfBirth = ctx.PostForm("date_of_birth")
-	profile.Location = ctx.PostForm("location")
+	profile.LocationLegacy = ctx.PostForm("location")
 	profile.Interests = ctx.PostFormArray("interests")
+	profile.Languages = ctx.PostFormArray("languages")
+	profile.CountryCode = ctx.DefaultPostForm("country_code", "LK")
+	profile.Province = ctx.PostForm("province")
+	profile.District = ctx.PostForm("district")
+	profile.City = ctx.PostForm("city")
+	profile.PostalCode = ctx.PostForm("postal_code")
 
 	file, err := ctx.FormFile("profile_image")
 	if err == nil {
@@ -42,7 +48,9 @@ func CreateProfile(ctx *gin.Context) {
 			utils.RespondError(ctx, http.StatusInternalServerError, err, "CreateProfile save error", "Failed to save image")
 			return
 		}
-		profile.ProfileImage = fmt.Sprintf("http://%s/uploads/%s", ctx.Request.Host, filename)
+		url := fmt.Sprintf("http://%s/uploads/%s", ctx.Request.Host, filename)
+		profile.ProfileImageURL = url
+		profile.ProfileImageThumbURL = url
 	}
 
 	if err := profileService.CreateOrUpdateProfile(username.(string), profile); err != nil {
