@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -14,6 +15,16 @@ import (
 	"github.com/icpinto/dating-app/services"
 	"github.com/icpinto/dating-app/utils"
 )
+
+func filterEmptyStrings(values []string) []string {
+	var result []string
+	for _, v := range values {
+		if strings.TrimSpace(v) != "" {
+			result = append(result, v)
+		}
+	}
+	return result
+}
 
 func CreateProfile(ctx *gin.Context) {
 	username, exists := ctx.Get("username")
@@ -29,7 +40,7 @@ func CreateProfile(ctx *gin.Context) {
 	profile.Gender = ctx.PostForm("gender")
 	profile.DateOfBirth = ctx.PostForm("date_of_birth")
 	profile.LocationLegacy = ctx.PostForm("location")
-	profile.Interests = ctx.PostFormArray("interests")
+	profile.Interests = filterEmptyStrings(ctx.PostFormArray("interests"))
 	profile.CivilStatus = ctx.PostForm("civil_status")
 	profile.Religion = ctx.PostForm("religion")
 	profile.ReligionDetail = ctx.PostForm("religion_detail")
@@ -43,7 +54,7 @@ func CreateProfile(ctx *gin.Context) {
 	profile.DietaryPreference = ctx.PostForm("dietary_preference")
 	profile.Smoking = ctx.PostForm("smoking")
 	profile.Alcohol = ctx.PostForm("alcohol")
-	profile.Languages = ctx.PostFormArray("languages")
+	profile.Languages = filterEmptyStrings(ctx.PostFormArray("languages"))
 	profile.CountryCode = ctx.DefaultPostForm("country_code", "LK")
 	profile.Province = ctx.PostForm("province")
 	profile.District = ctx.PostForm("district")
