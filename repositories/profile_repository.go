@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"database/sql"
+	"encoding/json"
 	"log"
 
 	"github.com/icpinto/dating-app/models"
@@ -20,6 +21,16 @@ func NewProfileRepository(db *sql.DB) *ProfileRepository {
 
 // Upsert creates or updates a profile record.
 func (r *ProfileRepository) Upsert(profile models.Profile) error {
+	// Ensure metadata is valid JSON; default to empty object if not provided or invalid
+	metadata := []byte("{}")
+	if profile.Metadata != "" {
+		if json.Valid([]byte(profile.Metadata)) {
+			metadata = []byte(profile.Metadata)
+		} else {
+			log.Printf("ProfileRepository.Upsert invalid metadata for user %d: %s", profile.UserID, profile.Metadata)
+		}
+	}
+
 	_, err := r.db.Exec(`
         INSERT INTO profiles (
             user_id, bio, gender, date_of_birth, location_legacy, interests, civil_status, religion, religion_detail,
@@ -62,7 +73,7 @@ func (r *ProfileRepository) Upsert(profile models.Profile) error {
 		profile.FatherOccupation, profile.MotherOccupation, profile.SiblingsCount, profile.Siblings,
 		profile.HoroscopeAvailable, profile.BirthTime, profile.BirthPlace, profile.SinhalaRaasi, profile.Nakshatra, profile.Horoscope,
 		profile.ProfileImageURL, profile.ProfileImageThumbURL, profile.Verified, profile.ModerationStatus,
-		profile.LastActiveAt, profile.Metadata)
+		profile.LastActiveAt, metadata)
 	if err != nil {
 		log.Printf("ProfileRepository.Upsert error for user %d: %v", profile.UserID, err)
 	}
