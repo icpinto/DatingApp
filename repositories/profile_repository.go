@@ -49,10 +49,10 @@ func (r *ProfileRepository) GetByUserID(userID int) (models.UserProfile, error) 
 	err := r.db.QueryRow(`
        SELECT p.id, p.user_id, u.username, p.bio, p.gender, p.date_of_birth,
               COALESCE(p.location_legacy, ''), p.interests,
-              COALESCE(p.profile_image_url, ''), COALESCE(p.profile_image_thumb_url, ''),
-              COALESCE(p.languages, ARRAY[]::text[]),
-              p.country_code, p.province, p.district, p.city, p.postal_code,
-              p.created_at, p.updated_at
+             COALESCE(p.profile_image_url, ''), COALESCE(p.profile_image_thumb_url, ''),
+             COALESCE(p.languages, ARRAY[]::text[]),
+             COALESCE(p.country_code, ''), COALESCE(p.province, ''), COALESCE(p.district, ''), COALESCE(p.city, ''), COALESCE(p.postal_code, ''),
+             p.created_at, p.updated_at
        FROM profiles p JOIN users u ON p.user_id = u.id WHERE p.user_id = $1`, userID).Scan(
 		&profile.ID, &profile.UserID, &profile.Username, &profile.Bio, &profile.Gender,
 		&profile.DateOfBirth, &profile.LocationLegacy, pq.Array(&profile.Interests),
@@ -73,7 +73,7 @@ func (r *ProfileRepository) GetAll() ([]models.UserProfile, error) {
                       COALESCE(p.location_legacy, ''), p.interests,
                       COALESCE(p.profile_image_url, ''), COALESCE(p.profile_image_thumb_url, ''),
                       COALESCE(p.languages, ARRAY[]::text[]),
-                      p.country_code, p.province, p.district, p.city, p.postal_code,
+                      COALESCE(p.country_code, ''), COALESCE(p.province, ''), COALESCE(p.district, ''), COALESCE(p.city, ''), COALESCE(p.postal_code, ''),
                       p.created_at, p.updated_at
                FROM profiles p JOIN users u ON p.user_id = u.id`)
 	if err != nil {
