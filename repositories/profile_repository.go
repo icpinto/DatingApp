@@ -49,6 +49,7 @@ func (r *ProfileRepository) Upsert(profile models.Profile) error {
 		}
 	}
 
+	gender := sql.NullString{String: profile.Gender, Valid: profile.Gender != ""}
 	civilStatus := sql.NullString{String: profile.CivilStatus, Valid: profile.CivilStatus != ""}
 	dietaryPreference := sql.NullString{String: profile.DietaryPreference, Valid: profile.DietaryPreference != ""}
 	smoking := sql.NullString{String: profile.Smoking, Valid: profile.Smoking != ""}
@@ -70,7 +71,7 @@ $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
 $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
 $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42)
 ON CONFLICT (user_id)
-DO UPDATE SET bio = EXCLUDED.bio, gender = EXCLUDED.gender, date_of_birth = EXCLUDED.date_of_birth,
+DO UPDATE SET bio = EXCLUDED.bio, gender = COALESCE(EXCLUDED.gender, profiles.gender), date_of_birth = EXCLUDED.date_of_birth,
 location_legacy = EXCLUDED.location_legacy, interests = EXCLUDED.interests, civil_status = EXCLUDED.civil_status,
 religion = EXCLUDED.religion, religion_detail = EXCLUDED.religion_detail, caste = EXCLUDED.caste,
 height_cm = EXCLUDED.height_cm, weight_kg = EXCLUDED.weight_kg,
@@ -90,7 +91,7 @@ profile_image_thumb_url = CASE WHEN EXCLUDED.profile_image_thumb_url <> '' THEN 
 verified = EXCLUDED.verified, moderation_status = EXCLUDED.moderation_status,
 last_active_at = EXCLUDED.last_active_at, metadata = EXCLUDED.metadata,
 updated_at = NOW()`,
-		profile.UserID, profile.Bio, profile.Gender, profile.DateOfBirth, profile.LocationLegacy,
+		profile.UserID, profile.Bio, gender, profile.DateOfBirth, profile.LocationLegacy,
 		pq.Array(profile.Interests), civilStatus, profile.Religion, profile.ReligionDetail,
 		profile.Caste, profile.HeightCM, profile.WeightKG, dietaryPreference, smoking, alcohol,
 		pq.Array(profile.Languages), profile.CountryCode, profile.Province, profile.District, profile.City, profile.PostalCode,
@@ -109,7 +110,7 @@ updated_at = NOW()`,
 func (r *ProfileRepository) GetByUserID(userID int) (models.UserProfile, error) {
 	var profile models.UserProfile
 	err := r.db.QueryRow(`
-       SELECT p.id, p.user_id, u.username, p.bio, p.gender, p.date_of_birth,
+       SELECT p.id, p.user_id, u.username, p.bio, COALESCE(p.gender::text, ''), p.date_of_birth,
               COALESCE(p.location_legacy, ''), COALESCE(p.interests, ARRAY[]::text[]),
               COALESCE(p.civil_status::text, ''), COALESCE(p.religion, ''), COALESCE(p.religion_detail, ''), COALESCE(p.caste, ''),
               COALESCE(p.height_cm, 0), COALESCE(p.weight_kg, 0), COALESCE(p.dietary_preference::text, ''), COALESCE(p.smoking::text, ''), COALESCE(p.alcohol::text, ''),
@@ -141,7 +142,7 @@ func (r *ProfileRepository) GetByUserID(userID int) (models.UserProfile, error) 
 // GetAll retrieves all profiles.
 func (r *ProfileRepository) GetAll() ([]models.UserProfile, error) {
 	rows, err := r.db.Query(`
-               SELECT p.id, p.user_id, u.username, p.bio, p.gender, p.date_of_birth,
+               SELECT p.id, p.user_id, u.username, p.bio, COALESCE(p.gender::text, ''), p.date_of_birth,
                       COALESCE(p.location_legacy, ''), COALESCE(p.interests, ARRAY[]::text[]),
                       COALESCE(p.civil_status::text, ''), COALESCE(p.religion, ''), COALESCE(p.religion_detail, ''), COALESCE(p.caste, ''),
                       COALESCE(p.height_cm, 0), COALESCE(p.weight_kg, 0), COALESCE(p.dietary_preference::text, ''), COALESCE(p.smoking::text, ''), COALESCE(p.alcohol::text, ''),
