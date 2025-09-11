@@ -29,12 +29,44 @@ func CreateProfile(ctx *gin.Context) {
 	profile.DateOfBirth = ctx.PostForm("date_of_birth")
 	profile.LocationLegacy = ctx.PostForm("location")
 	profile.Interests = ctx.PostFormArray("interests")
+	profile.CivilStatus = ctx.PostForm("civil_status")
+	profile.Religion = ctx.PostForm("religion")
+	profile.ReligionDetail = ctx.PostForm("religion_detail")
+	profile.Caste = ctx.PostForm("caste")
+	if v, err := strconv.Atoi(ctx.DefaultPostForm("height_cm", "0")); err == nil {
+		profile.HeightCM = v
+	}
+	if v, err := strconv.Atoi(ctx.DefaultPostForm("weight_kg", "0")); err == nil {
+		profile.WeightKG = v
+	}
+	profile.DietaryPreference = ctx.PostForm("dietary_preference")
+	profile.Smoking = ctx.PostForm("smoking")
+	profile.Alcohol = ctx.PostForm("alcohol")
 	profile.Languages = ctx.PostFormArray("languages")
 	profile.CountryCode = ctx.DefaultPostForm("country_code", "LK")
 	profile.Province = ctx.PostForm("province")
 	profile.District = ctx.PostForm("district")
 	profile.City = ctx.PostForm("city")
 	profile.PostalCode = ctx.PostForm("postal_code")
+	profile.HighestEducation = ctx.PostForm("highest_education")
+	profile.FieldOfStudy = ctx.PostForm("field_of_study")
+	profile.Institution = ctx.PostForm("institution")
+	profile.EmploymentStatus = ctx.PostForm("employment_status")
+	profile.Occupation = ctx.PostForm("occupation")
+	profile.FatherOccupation = ctx.PostForm("father_occupation")
+	profile.MotherOccupation = ctx.PostForm("mother_occupation")
+	if v, err := strconv.Atoi(ctx.DefaultPostForm("siblings_count", "0")); err == nil {
+		profile.SiblingsCount = v
+	}
+	profile.Siblings = ctx.PostForm("siblings")
+	if v, err := strconv.ParseBool(ctx.DefaultPostForm("horoscope_available", "false")); err == nil {
+		profile.HoroscopeAvailable = v
+	}
+	profile.BirthTime = ctx.PostForm("birth_time")
+	profile.BirthPlace = ctx.PostForm("birth_place")
+	profile.SinhalaRaasi = ctx.PostForm("sinhala_raasi")
+	profile.Nakshatra = ctx.PostForm("nakshatra")
+	profile.Horoscope = ctx.PostForm("horoscope")
 
 	file, err := ctx.FormFile("profile_image")
 	if err == nil {
@@ -111,4 +143,16 @@ func GetUserProfile(ctx *gin.Context) {
 	}
 
 	utils.RespondSuccess(ctx, http.StatusOK, profile)
+}
+
+// GetProfileEnums returns enum values for profile-related fields.
+func GetProfileEnums(ctx *gin.Context) {
+	profileService := ctx.MustGet("profileService").(*services.ProfileService)
+
+	enums, err := profileService.GetProfileEnums()
+	if err != nil {
+		utils.RespondError(ctx, http.StatusInternalServerError, err, "GetProfileEnums service error", "Failed to retrieve enums")
+		return
+	}
+	utils.RespondSuccess(ctx, http.StatusOK, enums)
 }

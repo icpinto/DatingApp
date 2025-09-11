@@ -68,3 +68,13 @@ func (s *ProfileService) GetProfileByUserID(userID int) (models.UserProfile, err
 	}
 	return profile, nil
 }
+
+// GetProfileEnums returns available enum options for profiles.
+func (s *ProfileService) GetProfileEnums() (models.ProfileEnums, error) {
+	enums, err := s.repo.GetProfileEnums()
+	if err != nil {
+		log.Printf("GetProfileEnums repository error: %v", err)
+		return models.ProfileEnums{}, err
+	}
+	return enums, nil
+}
