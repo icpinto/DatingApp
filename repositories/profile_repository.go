@@ -56,6 +56,9 @@ func (r *ProfileRepository) Upsert(profile models.Profile) error {
 	alcohol := sql.NullString{String: profile.Alcohol, Valid: profile.Alcohol != ""}
 	highestEducation := sql.NullString{String: profile.HighestEducation, Valid: profile.HighestEducation != ""}
 	employmentStatus := sql.NullString{String: profile.EmploymentStatus, Valid: profile.EmploymentStatus != ""}
+	dateOfBirth := sql.NullString{String: profile.DateOfBirth, Valid: profile.DateOfBirth != ""}
+	birthTime := sql.NullString{String: profile.BirthTime, Valid: profile.BirthTime != ""}
+	lastActiveAt := sql.NullString{String: profile.LastActiveAt, Valid: profile.LastActiveAt != ""}
 
 	_, err := r.db.Exec(`
 INSERT INTO profiles (
@@ -91,15 +94,15 @@ profile_image_thumb_url = CASE WHEN EXCLUDED.profile_image_thumb_url <> '' THEN 
 verified = EXCLUDED.verified, moderation_status = EXCLUDED.moderation_status,
 last_active_at = EXCLUDED.last_active_at, metadata = EXCLUDED.metadata,
 updated_at = NOW()`,
-		profile.UserID, profile.Bio, gender, profile.DateOfBirth, profile.LocationLegacy,
+		profile.UserID, profile.Bio, gender, dateOfBirth, profile.LocationLegacy,
 		pq.Array(profile.Interests), civilStatus, profile.Religion, profile.ReligionDetail,
 		profile.Caste, profile.HeightCM, profile.WeightKG, dietaryPreference, smoking, alcohol,
 		pq.Array(profile.Languages), profile.CountryCode, profile.Province, profile.District, profile.City, profile.PostalCode,
 		highestEducation, profile.FieldOfStudy, profile.Institution, employmentStatus, profile.Occupation,
 		profile.FatherOccupation, profile.MotherOccupation, profile.SiblingsCount, siblingsJSON,
-		profile.HoroscopeAvailable, profile.BirthTime, profile.BirthPlace, profile.SinhalaRaasi, profile.Nakshatra, horoscopeJSON,
+		profile.HoroscopeAvailable, birthTime, profile.BirthPlace, profile.SinhalaRaasi, profile.Nakshatra, horoscopeJSON,
 		profile.ProfileImageURL, profile.ProfileImageThumbURL, profile.Verified, profile.ModerationStatus,
-		profile.LastActiveAt, metadata)
+		lastActiveAt, metadata)
 	if err != nil {
 		log.Printf("ProfileRepository.Upsert error for user %d: %v", profile.UserID, err)
 	}
