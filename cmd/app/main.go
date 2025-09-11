@@ -69,6 +69,9 @@ func setupRouter(sqlDB *sql.DB) (*gin.Engine, *services.ChatService) {
 	protected.GET("/profiles", controllers.GetProfiles)
 	protected.GET("/profile/:user_id", controllers.GetUserProfile)
 
+	// Allow authenticated users to retrieve profile enumerations via /user/profile/enums
+	protected.GET("/profile/enums", controllers.GetProfileEnums)
+
 	router.GET("/profile/enums", controllers.GetProfileEnums)
 
 	protected.POST("/sendRequest", controllers.SendFriendRequest)
