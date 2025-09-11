@@ -3,7 +3,10 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/icpinto/dating-app/models"
@@ -21,9 +24,25 @@ func CreateProfile(ctx *gin.Context) {
 	profileService := ctx.MustGet("profileService").(*services.ProfileService)
 
 	var profile models.Profile
-	if err := ctx.BindJSON(&profile); err != nil {
-		utils.RespondError(ctx, http.StatusBadRequest, err, "CreateProfile bind error", "Invalid input")
-		return
+	profile.Bio = ctx.PostForm("bio")
+	profile.Gender = ctx.PostForm("gender")
+	profile.DateOfBirth = ctx.PostForm("date_of_birth")
+	profile.Location = ctx.PostForm("location")
+	profile.Interests = ctx.PostFormArray("interests")
+
+	file, err := ctx.FormFile("profile_image")
+	if err == nil {
+		if err := os.MkdirAll("uploads", os.ModePerm); err != nil {
+			utils.RespondError(ctx, http.StatusInternalServerError, err, "CreateProfile mkdir error", "Failed to save image")
+			return
+		}
+		filename := fmt.Sprintf("%d_%s", time.Now().Unix(), filepath.Base(file.Filename))
+		dst := filepath.Join("uploads", filename)
+		if err := ctx.SaveUploadedFile(file, dst); err != nil {
+			utils.RespondError(ctx, http.StatusInternalServerError, err, "CreateProfile save error", "Failed to save image")
+			return
+		}
+		profile.ProfileImage = "/" + dst
 	}
 
 	if err := profileService.CreateOrUpdateProfile(username.(string), profile); err != nil {
