@@ -33,6 +33,7 @@ func main() {
 
 func setupRouter(sqlDB *sql.DB) (*gin.Engine, *services.ChatService) {
 	router := gin.Default()
+	router.Static("/uploads", "./uploads")
 
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000"},

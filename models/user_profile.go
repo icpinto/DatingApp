@@ -16,15 +16,16 @@ type Claims struct {
 }
 
 type Profile struct {
-	ID          int      `json:"id"`
-	UserID      int      `json:"user_id"` // Foreign key to users table
-	Bio         string   `json:"bio"`
-	Gender      string   `json:"gender"`
-	DateOfBirth string   `json:"date_of_birth"`
-	Location    string   `json:"location"`
-	Interests   []string `json:"interests"` // Array of interests
-	CreatedAt   string   `json:"created_at"`
-	UpdatedAt   string   `json:"updated_at"`
+	ID           int      `json:"id"`
+	UserID       int      `json:"user_id"` // Foreign key to users table
+	Bio          string   `json:"bio"`
+	Gender       string   `json:"gender"`
+	DateOfBirth  string   `json:"date_of_birth"`
+	Location     string   `json:"location"`
+	Interests    []string `json:"interests"` // Array of interests
+	ProfileImage string   `json:"profile_image"`
+	CreatedAt    string   `json:"created_at"`
+	UpdatedAt    string   `json:"updated_at"`
 }
 
 type UserProfile struct {
