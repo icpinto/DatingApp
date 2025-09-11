@@ -21,13 +21,31 @@ func NewProfileRepository(db *sql.DB) *ProfileRepository {
 
 // Upsert creates or updates a profile record.
 func (r *ProfileRepository) Upsert(profile models.Profile) error {
-	// Ensure metadata is valid JSON; default to empty object if not provided or invalid
+	// Ensure JSONB fields are valid; default to empty JSON object if not provided or invalid
 	metadata := "{}"
 	if profile.Metadata != "" {
 		if json.Valid([]byte(profile.Metadata)) {
 			metadata = profile.Metadata
 		} else {
 			log.Printf("ProfileRepository.Upsert invalid metadata for user %d: %s", profile.UserID, profile.Metadata)
+		}
+	}
+
+	siblingsJSON := "{}"
+	if profile.Siblings != "" {
+		if json.Valid([]byte(profile.Siblings)) {
+			siblingsJSON = profile.Siblings
+		} else {
+			log.Printf("ProfileRepository.Upsert invalid siblings for user %d: %s", profile.UserID, profile.Siblings)
+		}
+	}
+
+	horoscopeJSON := "{}"
+	if profile.Horoscope != "" {
+		if json.Valid([]byte(profile.Horoscope)) {
+			horoscopeJSON = profile.Horoscope
+		} else {
+			log.Printf("ProfileRepository.Upsert invalid horoscope for user %d: %s", profile.UserID, profile.Horoscope)
 		}
 	}
 
@@ -77,8 +95,8 @@ updated_at = NOW()`,
 		profile.Caste, profile.HeightCM, profile.WeightKG, dietaryPreference, smoking, alcohol,
 		pq.Array(profile.Languages), profile.CountryCode, profile.Province, profile.District, profile.City, profile.PostalCode,
 		highestEducation, profile.FieldOfStudy, profile.Institution, employmentStatus, profile.Occupation,
-		profile.FatherOccupation, profile.MotherOccupation, profile.SiblingsCount, profile.Siblings,
-		profile.HoroscopeAvailable, profile.BirthTime, profile.BirthPlace, profile.SinhalaRaasi, profile.Nakshatra, profile.Horoscope,
+		profile.FatherOccupation, profile.MotherOccupation, profile.SiblingsCount, siblingsJSON,
+		profile.HoroscopeAvailable, profile.BirthTime, profile.BirthPlace, profile.SinhalaRaasi, profile.Nakshatra, horoscopeJSON,
 		profile.ProfileImageURL, profile.ProfileImageThumbURL, profile.Verified, profile.ModerationStatus,
 		profile.LastActiveAt, metadata)
 	if err != nil {
