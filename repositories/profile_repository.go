@@ -36,7 +36,7 @@ func (r *ProfileRepository) Upsert(profile models.Profile) error {
 func (r *ProfileRepository) GetByUserID(userID int) (models.UserProfile, error) {
 	var profile models.UserProfile
 	err := r.db.QueryRow(`
-       SELECT p.id, p.user_id, u.username, p.bio, p.gender, p.date_of_birth, p.location, p.interests, p.profile_image, p.created_at, p.updated_at
+       SELECT p.id, p.user_id, u.username, p.bio, p.gender, p.date_of_birth, p.location, p.interests, COALESCE(p.profile_image, ''), p.created_at, p.updated_at
        FROM profiles p JOIN users u ON p.user_id = u.id WHERE p.user_id = $1`, userID).Scan(
 		&profile.ID, &profile.UserID, &profile.Username, &profile.Bio, &profile.Gender,
 		&profile.DateOfBirth, &profile.Location, pq.Array(&profile.Interests), &profile.ProfileImage,
@@ -50,7 +50,7 @@ func (r *ProfileRepository) GetByUserID(userID int) (models.UserProfile, error) 
 // GetAll retrieves all profiles.
 func (r *ProfileRepository) GetAll() ([]models.UserProfile, error) {
 	rows, err := r.db.Query(`
-               SELECT p.id, p.user_id, u.username, p.bio, p.gender, p.date_of_birth, p.location, p.interests, p.profile_image, p.created_at, p.updated_at
+               SELECT p.id, p.user_id, u.username, p.bio, p.gender, p.date_of_birth, p.location, p.interests, COALESCE(p.profile_image, ''), p.created_at, p.updated_at
                FROM profiles p JOIN users u ON p.user_id = u.id`)
 	if err != nil {
 		log.Printf("ProfileRepository.GetAll query error: %v", err)
