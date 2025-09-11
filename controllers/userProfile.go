@@ -42,7 +42,7 @@ func CreateProfile(ctx *gin.Context) {
 			utils.RespondError(ctx, http.StatusInternalServerError, err, "CreateProfile save error", "Failed to save image")
 			return
 		}
-		profile.ProfileImage = "/" + dst
+		profile.ProfileImage = fmt.Sprintf("http://%s/uploads/%s", ctx.Request.Host, filename)
 	}
 
 	if err := profileService.CreateOrUpdateProfile(username.(string), profile); err != nil {
