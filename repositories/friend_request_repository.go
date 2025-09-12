@@ -118,3 +118,15 @@ func (r *FriendRequestRepository) Delete(requestID int) error {
 	}
 	return nil
 }
+
+// LinkConversation stores the conversation ID for an accepted match.
+func (r *FriendRequestRepository) LinkConversation(senderID, receiverID, conversationID int) error {
+	_, err := r.db.Exec(`
+        UPDATE friend_requests
+        SET conversation_id = $1
+        WHERE sender_id = $2 AND receiver_id = $3`, conversationID, senderID, receiverID)
+	if err != nil {
+		log.Printf("FriendRequestRepository.LinkConversation exec error for users %d and %d: %v", senderID, receiverID, err)
+	}
+	return err
+}

@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/icpinto/dating-app/models"
 	"github.com/icpinto/dating-app/repositories"
 )
@@ -15,14 +16,14 @@ var ErrFriendRequestExists = errors.New("friend request already exists")
 
 // FriendRequestService provides operations related to friend requests.
 type FriendRequestService struct {
-	db        *sql.DB
-	repo      *repositories.FriendRequestRepository
-	convoRepo *repositories.ConversationRepository
+	db         *sql.DB
+	repo       *repositories.FriendRequestRepository
+	outboxRepo *repositories.OutboxRepository
 }
 
 // NewFriendRequestService creates a new FriendRequestService.
 func NewFriendRequestService(db *sql.DB) *FriendRequestService {
-	return &FriendRequestService{db: db, repo: repositories.NewFriendRequestRepository(db), convoRepo: repositories.NewConversationRepository(db)}
+	return &FriendRequestService{db: db, repo: repositories.NewFriendRequestRepository(db), outboxRepo: repositories.NewOutboxRepository(db)}
 }
 
 // SendFriendRequest sends a friend request from a user to another.
@@ -63,27 +64,38 @@ func (s *FriendRequestService) SendFriendRequest(username string, request models
 
 // AcceptFriendRequest accepts a pending friend request.
 func (s *FriendRequestService) AcceptFriendRequest(requestID int) error {
-	if err := s.repo.UpdateStatus(requestID, "accepted", time.Now()); err != nil {
+	tx, err := s.db.Begin()
+	if err != nil {
+		log.Printf("AcceptFriendRequest begin tx error for request %d: %v", requestID, err)
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec(`
+                UPDATE friend_requests SET status = $1, updated_at = $2 WHERE id = $3`,
+		"accepted", time.Now(), requestID); err != nil {
 		log.Printf("AcceptFriendRequest update status error for request %d: %v", requestID, err)
 		return err
 	}
-	user1ID, user2ID, err := s.repo.GetUsers(requestID)
-	if err != nil {
+
+	var user1ID, user2ID int
+	if err := tx.QueryRow(`SELECT sender_id, receiver_id FROM friend_requests WHERE id = $1`, requestID).Scan(&user1ID, &user2ID); err != nil {
 		log.Printf("AcceptFriendRequest get users error for request %d: %v", requestID, err)
 		return err
 	}
-	user1Username, err := repositories.GetUsernameByID(s.db, user1ID)
-	if err != nil {
-		log.Printf("AcceptFriendRequest user1 lookup error for %d: %v", user1ID, err)
+
+	event := models.ConversationOutbox{
+		EventID: uuid.New().String(),
+		User1ID: user1ID,
+		User2ID: user2ID,
+	}
+	if err := s.outboxRepo.CreateTx(tx, event); err != nil {
+		log.Printf("AcceptFriendRequest create outbox error for request %d: %v", requestID, err)
 		return err
 	}
-	user2Username, err := repositories.GetUsernameByID(s.db, user2ID)
-	if err != nil {
-		log.Printf("AcceptFriendRequest user2 lookup error for %d: %v", user2ID, err)
-		return err
-	}
-	if err := s.convoRepo.Create(user1ID, user1Username, user2ID, user2Username); err != nil {
-		log.Printf("AcceptFriendRequest create conversation error for request %d: %v", requestID, err)
+
+	if err := tx.Commit(); err != nil {
+		log.Printf("AcceptFriendRequest commit error for request %d: %v", requestID, err)
 		return err
 	}
 	return nil

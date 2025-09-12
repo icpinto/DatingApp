@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"log"
+	"os"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -23,6 +24,13 @@ func main() {
 	defer sqlDB.Close()
 
 	router, chatService := setupRouter(sqlDB)
+
+	messagingURL := os.Getenv("MESSAGING_SERVICE_URL")
+	if messagingURL == "" {
+		messagingURL = "http://localhost:8081"
+	}
+	worker := services.NewOutboxWorker(sqlDB, messagingURL)
+	go worker.Start()
 
 	go websocket.HandleMessages(chatService)
 
