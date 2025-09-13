@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/icpinto/dating-app/repositories"
+	"github.com/icpinto/dating-app/utils"
 )
 
 // OutboxWorker processes conversation outbox events.
@@ -58,8 +59,12 @@ func (w *OutboxWorker) process() error {
 }
 
 func (w *OutboxWorker) handleEvent(eventID string, user1ID, user2ID int) error {
+	token, err := utils.GenerateToken(strconv.Itoa(user1ID))
+	if err != nil {
+		return err
+	}
 	payload := map[string][]string{
-		"participant_ids": []string{strconv.Itoa(user1ID), strconv.Itoa(user2ID)},
+		"participant_ids": []string{strconv.Itoa(user2ID)},
 	}
 	body, _ := json.Marshal(payload)
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/conversations", w.baseURL), bytes.NewReader(body))
@@ -68,6 +73,7 @@ func (w *OutboxWorker) handleEvent(eventID string, user1ID, user2ID int) error {
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Idempotency-Key", eventID)
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	resp, err := w.client.Do(req)
 	if err != nil {
