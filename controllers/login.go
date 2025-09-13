@@ -76,8 +76,8 @@ func Login(ctx *gin.Context) {
 		return
 	}
 
-	// Generate JWT token
-	token, err := utils.GenerateToken(user.Username)
+	// Generate JWT token using user ID
+	token, err := utils.GenerateToken(userId)
 	if err != nil {
 		utils.RespondError(ctx, http.StatusInternalServerError, err, "Login token generation error", "Token generation failed")
 		return

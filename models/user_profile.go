@@ -11,7 +11,7 @@ type User struct {
 
 // Claims defines the structure of the JWT payload
 type Claims struct {
-	Username string `json:"username"`
+	UserID int `json:"user_id"`
 	jwt.StandardClaims
 }
 
