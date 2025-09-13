@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
 	"github.com/icpinto/dating-app/models"
+	"github.com/icpinto/dating-app/services"
 )
 
 var jwtSecret = []byte("secret") // Secret key used for signing tokens
@@ -29,8 +30,17 @@ func Authenticate(c *gin.Context) {
 		return
 	}
 
-	// Set the username in the context so it can be accessed in the handler
-	c.Set("username", claims.Username)
+	// Retrieve the username based on user ID and set both in the context
+	userService := c.MustGet("userService").(*services.UserService)
+	username, err := userService.GetUsernameByID(claims.UserID)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		c.Abort()
+		return
+	}
+
+	c.Set("userID", claims.UserID)
+	c.Set("username", username)
 
 	c.Next() // Proceed to the next middleware or route handler
 }

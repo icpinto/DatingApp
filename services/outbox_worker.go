@@ -59,7 +59,7 @@ func (w *OutboxWorker) process() error {
 }
 
 func (w *OutboxWorker) handleEvent(eventID string, user1ID, user2ID int) error {
-	token, err := utils.GenerateToken(strconv.Itoa(user1ID))
+	token, err := utils.GenerateToken(user1ID)
 	if err != nil {
 		return err
 	}

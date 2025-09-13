@@ -51,3 +51,12 @@ func (s *UserService) GetUserIDByUsername(username string) (int, error) {
 	}
 	return id, err
 }
+
+// GetUsernameByID returns the username for a given user ID.
+func (s *UserService) GetUsernameByID(userID int) (string, error) {
+	username, err := repositories.GetUsernameByID(s.db, userID)
+	if err != nil {
+		log.Printf("GetUsernameByID service error for %d: %v", userID, err)
+	}
+	return username, err
+}
