@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/icpinto/dating-app/repositories"
@@ -57,9 +58,11 @@ func (w *OutboxWorker) process() error {
 }
 
 func (w *OutboxWorker) handleEvent(eventID string, user1ID, user2ID int) error {
-	payload := map[string]int{"user1_id": user1ID, "user2_id": user2ID}
+	payload := map[string][]string{
+		"participant_ids": []string{strconv.Itoa(user1ID), strconv.Itoa(user2ID)},
+	}
 	body, _ := json.Marshal(payload)
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/internal/create_conversation", w.baseURL), bytes.NewReader(body))
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/conversations", w.baseURL), bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
