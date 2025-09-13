@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/icpinto/dating-app/models"
 )
 
@@ -60,7 +61,7 @@ func (r *OutboxRepository) FetchPending(limit int) ([]models.ConversationOutbox,
 }
 
 // MarkProcessed marks an outbox event as processed and stores the conversation ID.
-func (r *OutboxRepository) MarkProcessed(eventID string, conversationID int) error {
+func (r *OutboxRepository) MarkProcessed(eventID string, conversationID uuid.UUID) error {
 	_, err := r.db.Exec(`
         UPDATE conversation_outbox
         SET processed = true, conversation_id = $1
