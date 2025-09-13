@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/icpinto/dating-app/models"
 )
 
@@ -120,7 +121,7 @@ func (r *FriendRequestRepository) Delete(requestID int) error {
 }
 
 // LinkConversation stores the conversation ID for an accepted match.
-func (r *FriendRequestRepository) LinkConversation(senderID, receiverID, conversationID int) error {
+func (r *FriendRequestRepository) LinkConversation(senderID, receiverID int, conversationID uuid.UUID) error {
 	_, err := r.db.Exec(`
         UPDATE friend_requests
         SET conversation_id = $1

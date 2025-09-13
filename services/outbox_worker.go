@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/icpinto/dating-app/repositories"
 	"github.com/icpinto/dating-app/utils"
 )
@@ -84,7 +85,7 @@ func (w *OutboxWorker) handleEvent(eventID string, user1ID, user2ID int) error {
 		return fmt.Errorf("unexpected status %d", resp.StatusCode)
 	}
 	var res struct {
-		ConversationID int `json:"conversation_id"`
+		ConversationID uuid.UUID `json:"conversation_id"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
 		return err
