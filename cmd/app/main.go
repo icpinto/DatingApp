@@ -12,7 +12,6 @@ import (
 	"github.com/icpinto/dating-app/internals/db"
 	"github.com/icpinto/dating-app/middlewares"
 	"github.com/icpinto/dating-app/services"
-	"github.com/icpinto/dating-app/websocket"
 	_ "github.com/lib/pq"
 )
 
@@ -23,7 +22,7 @@ func main() {
 	}
 	defer sqlDB.Close()
 
-	router, chatService := setupRouter(sqlDB)
+	router := setupRouter(sqlDB)
 
 	messagingURL := os.Getenv("MESSAGING_SERVICE_URL")
 	if messagingURL == "" {
@@ -32,14 +31,12 @@ func main() {
 	worker := services.NewOutboxWorker(sqlDB, messagingURL)
 	go worker.Start()
 
-	go websocket.HandleMessages(chatService)
-
 	if err := router.Run(":8080"); err != nil {
 		log.Fatal("Server failed to start:", err)
 	}
 }
 
-func setupRouter(sqlDB *sql.DB) (*gin.Engine, *services.ChatService) {
+func setupRouter(sqlDB *sql.DB) *gin.Engine {
 	router := gin.Default()
 	router.Static("/uploads", "./uploads")
 
@@ -56,14 +53,12 @@ func setupRouter(sqlDB *sql.DB) (*gin.Engine, *services.ChatService) {
 	questionnaireService := services.NewQuestionnaireService(sqlDB)
 	friendRequestService := services.NewFriendRequestService(sqlDB)
 	profileService := services.NewProfileService(sqlDB)
-	chatService := services.NewChatService(sqlDB)
 
 	router.Use(middlewares.ServiceMiddleware(middlewares.Services{
 		UserService:          userService,
 		QuestionnaireService: questionnaireService,
 		FriendRequestService: friendRequestService,
 		ProfileService:       profileService,
-		ChatService:          chatService,
 	}))
 
 	router.POST("/register", controllers.Register)
@@ -92,13 +87,5 @@ func setupRouter(sqlDB *sql.DB) (*gin.Engine, *services.ChatService) {
 	protected.POST("/submitQuestionnaire", controllers.SubmitQuestionnaire)
 	protected.GET("/questionnaireAnswers", controllers.GetUserAnswers)
 
-	router.GET("/ws/:token", middlewares.AuthenticateWS, func(c *gin.Context) {
-		websocket.HandleConnections(c)
-	})
-
-	protected.GET("/conversations", controllers.GetAllConversations)
-	protected.POST("/conversations", controllers.CreateConversation)
-	protected.GET("/conversations/:id", controllers.GetChatHistory)
-
-	return router, chatService
+	return router
 }
