@@ -10,7 +10,6 @@ type Services struct {
 	QuestionnaireService *services.QuestionnaireService
 	FriendRequestService *services.FriendRequestService
 	ProfileService       *services.ProfileService
-	ChatService          *services.ChatService
 }
 
 func ServiceMiddleware(s Services) gin.HandlerFunc {
@@ -19,7 +18,6 @@ func ServiceMiddleware(s Services) gin.HandlerFunc {
 		c.Set("questionnaireService", s.QuestionnaireService)
 		c.Set("friendRequestService", s.FriendRequestService)
 		c.Set("profileService", s.ProfileService)
-		c.Set("chatService", s.ChatService)
 		c.Next()
 	}
 }
