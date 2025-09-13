@@ -11,7 +11,7 @@ var DB *sql.DB
 
 func InitDB() (*sql.DB, error) {
 
-	db, err := sql.Open("postgres", "user=icpinto dbname=datingapp sslmode=disable password=yourpassword")
+	db, err := sql.Open("postgres", "user=datinguser dbname=datingapp sslmode=disable password=yourpassword")
 	if err != nil {
 		return nil, err
 	}
