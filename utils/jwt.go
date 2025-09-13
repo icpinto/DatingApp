@@ -3,17 +3,12 @@ package utils
 import (
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt"
+	"github.com/icpinto/dating-app/models"
 	"golang.org/x/crypto/bcrypt"
 )
 
 var jwtSecret = []byte("secret") // Secret key used for signing tokens
-
-// Claims defines the structure of the JWT payload
-type Claims struct {
-	UserID int `json:"user_id"`
-	jwt.StandardClaims
-}
 
 func HashPassword(password string) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -24,7 +19,7 @@ func HashPassword(password string) (string, error) {
 func GenerateToken(userID int) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour) // Token expiration time (24 hours)
 
-	claims := &Claims{
+	claims := &models.Claims{
 		UserID: userID,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
