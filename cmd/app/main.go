@@ -81,6 +81,7 @@ func setupRouter(sqlDB *sql.DB) *gin.Engine {
 	protected.POST("/acceptRequest", controllers.AcceptFriendRequest)
 	protected.POST("/rejectRequest", controllers.RejectFriendRequest)
 	protected.GET("/requests", controllers.GetPendingRequests)
+	protected.GET("/sentRequests", controllers.GetSentRequests)
 	protected.GET("/checkReqStatus/:reciver_id", controllers.CheckReqStatus)
 
 	protected.GET("/questionnaire", controllers.GetQuestionnaire)

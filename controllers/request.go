@@ -97,6 +97,25 @@ func GetPendingRequests(ctx *gin.Context) {
 	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"requests": requests})
 }
 
+func GetSentRequests(ctx *gin.Context) {
+	username, exists := ctx.Get("username")
+	if !exists {
+		utils.RespondError(ctx, http.StatusUnauthorized, nil, "GetSentRequests unauthorized", "Unauthorized")
+		return
+	}
+
+	frService := ctx.MustGet("friendRequestService").(*services.FriendRequestService)
+
+	requests, err := frService.GetSentRequests(username.(string))
+	if err != nil {
+		logMsg := fmt.Sprintf("GetSentRequests service error for %s", username.(string))
+		utils.RespondError(ctx, http.StatusInternalServerError, err, logMsg, err.Error())
+		return
+	}
+
+	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"requests": requests})
+}
+
 func CheckReqStatus(ctx *gin.Context) {
 	username, exists := ctx.Get("username")
 	if !exists {

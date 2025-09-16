@@ -141,6 +141,37 @@ func (s *FriendRequestService) GetPendingRequests(username string) ([]models.Fri
 	return requests, nil
 }
 
+// GetSentRequests retrieves all friend requests sent by a user.
+func (s *FriendRequestService) GetSentRequests(username string) ([]models.FriendRequest, error) {
+	userID, err := repositories.GetUserIDByUsername(s.db, username)
+	if err != nil {
+		log.Printf("GetSentRequests user lookup error for %s: %v", username, err)
+		return nil, err
+	}
+	requests, err := s.repo.GetSent(userID)
+	if err != nil {
+		log.Printf("GetSentRequests repository error for user %d: %v", userID, err)
+		return nil, err
+	}
+
+	for i := range requests {
+		sender, err := repositories.GetUsernameByID(s.db, requests[i].SenderID)
+		if err != nil {
+			log.Printf("GetSentRequests sender lookup error for user %d: %v", requests[i].SenderID, err)
+			return nil, err
+		}
+		receiver, err := repositories.GetUsernameByID(s.db, requests[i].ReceiverID)
+		if err != nil {
+			log.Printf("GetSentRequests receiver lookup error for user %d: %v", requests[i].ReceiverID, err)
+			return nil, err
+		}
+		requests[i].SenderUsername = sender
+		requests[i].ReceiverUsername = receiver
+	}
+
+	return requests, nil
+}
+
 // CheckRequestStatus checks if a friend request exists between sender and receiver.
 func (s *FriendRequestService) CheckRequestStatus(username string, receiverID int) (bool, error) {
 	senderID, err := repositories.GetUserIDByUsername(s.db, username)
