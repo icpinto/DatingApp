@@ -32,6 +32,7 @@ func setupRequestRouter(db *sql.DB, withUser bool) *gin.Engine {
 	r.POST("/acceptRequest", controllers.AcceptFriendRequest)
 	r.POST("/rejectRequest", controllers.RejectFriendRequest)
 	r.GET("/requests", controllers.GetPendingRequests)
+	r.GET("/sentRequests", controllers.GetSentRequests)
 	r.GET("/checkReqStatus/:reciver_id", controllers.CheckReqStatus)
 	return r
 }
@@ -191,6 +192,43 @@ func TestGetPendingRequestsSuccess(t *testing.T) {
 	router := setupRequestRouter(db, true)
 
 	req := httptest.NewRequest(http.MethodGet, "/requests", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200 got %d: %s", w.Code, w.Body.String())
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet db expectations: %v", err)
+	}
+}
+
+func TestGetSentRequestsSuccess(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("error creating sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	now := time.Now()
+
+	mock.ExpectQuery("SELECT id FROM users WHERE username=\\$1").
+		WithArgs("john").
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+	mock.ExpectQuery("SELECT id, sender_id, sender_username, receiver_id, receiver_username, status, created_at, updated_at FROM friend_requests WHERE sender_id = \\$1").
+		WithArgs(1).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "sender_id", "sender_username", "receiver_id", "receiver_username", "status", "created_at", "updated_at"}).
+			AddRow(11, 1, "", 2, "", "accepted", now, now))
+	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1").
+		WithArgs(1).
+		WillReturnRows(sqlmock.NewRows([]string{"username"}).AddRow("john"))
+	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1").
+		WithArgs(2).
+		WillReturnRows(sqlmock.NewRows([]string{"username"}).AddRow("alice"))
+
+	router := setupRequestRouter(db, true)
+
+	req := httptest.NewRequest(http.MethodGet, "/sentRequests", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 

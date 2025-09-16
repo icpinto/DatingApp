@@ -97,6 +97,34 @@ func (r *FriendRequestRepository) GetPending(userID int) ([]models.FriendRequest
 	return requests, nil
 }
 
+// GetSent retrieves all friend requests sent by a user.
+func (r *FriendRequestRepository) GetSent(userID int) ([]models.FriendRequest, error) {
+	rows, err := r.db.Query(`
+       SELECT id, sender_id, sender_username, receiver_id, receiver_username, status, created_at, updated_at
+       FROM friend_requests
+       WHERE sender_id = $1`, userID)
+	if err != nil {
+		log.Printf("FriendRequestRepository.GetSent query error for user %d: %v", userID, err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var requests []models.FriendRequest
+	for rows.Next() {
+		var request models.FriendRequest
+		if err := rows.Scan(&request.RequestId, &request.SenderID, &request.SenderUsername, &request.ReceiverID, &request.ReceiverUsername, &request.Status, &request.CreatedAt, &request.UpdatedAt); err != nil {
+			log.Printf("FriendRequestRepository.GetSent scan error: %v", err)
+			return nil, err
+		}
+		requests = append(requests, request)
+	}
+	if err := rows.Err(); err != nil {
+		log.Printf("FriendRequestRepository.GetSent rows error: %v", err)
+		return nil, err
+	}
+	return requests, nil
+}
+
 // Count returns the number of requests from sender to receiver.
 func (r *FriendRequestRepository) Count(senderID, receiverID int) (int, error) {
 	var count int
