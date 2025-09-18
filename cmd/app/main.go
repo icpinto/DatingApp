@@ -22,7 +22,9 @@ func main() {
 	}
 	defer sqlDB.Close()
 
-	router := setupRouter(sqlDB)
+	matchServiceURL := os.Getenv("MATCH_SERVICE_URL")
+
+	router := setupRouter(sqlDB, matchServiceURL)
 
 	messagingURL := os.Getenv("MESSAGING_SERVICE_URL")
 	if messagingURL == "" {
@@ -36,7 +38,7 @@ func main() {
 	}
 }
 
-func setupRouter(sqlDB *sql.DB) *gin.Engine {
+func setupRouter(sqlDB *sql.DB, matchServiceURL string) *gin.Engine {
 	router := gin.Default()
 	router.Static("/uploads", "./uploads")
 
@@ -53,12 +55,14 @@ func setupRouter(sqlDB *sql.DB) *gin.Engine {
 	questionnaireService := services.NewQuestionnaireService(sqlDB)
 	friendRequestService := services.NewFriendRequestService(sqlDB)
 	profileService := services.NewProfileService(sqlDB)
+	matchService := services.NewMatchService(matchServiceURL)
 
 	router.Use(middlewares.ServiceMiddleware(middlewares.Services{
 		UserService:          userService,
 		QuestionnaireService: questionnaireService,
 		FriendRequestService: friendRequestService,
 		ProfileService:       profileService,
+		MatchService:         matchService,
 	}))
 
 	router.POST("/register", controllers.Register)
@@ -71,6 +75,7 @@ func setupRouter(sqlDB *sql.DB) *gin.Engine {
 	protected.GET("/profile", controllers.GetProfile)
 	protected.GET("/profiles", controllers.GetProfiles)
 	protected.GET("/profile/:user_id", controllers.GetUserProfile)
+	protected.GET("/matches/:user_id", controllers.GetUserMatches)
 
 	// Allow authenticated users to retrieve profile enumerations via /user/profile/enums
 	protected.GET("/profile/enums", controllers.GetProfileEnums)
