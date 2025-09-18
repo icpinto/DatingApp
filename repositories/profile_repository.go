@@ -142,6 +142,60 @@ func (r *ProfileRepository) GetByUserID(userID int) (models.UserProfile, error) 
 	return profile, err
 }
 
+// GetByUserIDs retrieves profiles for the specified user IDs indexed by user ID.
+func (r *ProfileRepository) GetByUserIDs(userIDs []int) (map[int]models.UserProfile, error) {
+	profiles := make(map[int]models.UserProfile)
+	if len(userIDs) == 0 {
+		return profiles, nil
+	}
+
+	rows, err := r.db.Query(`
+       SELECT p.id, p.user_id, u.username, p.bio, COALESCE(p.gender::text, ''), p.date_of_birth,
+              COALESCE(p.location_legacy, ''), COALESCE(p.interests, ARRAY[]::text[]),
+              COALESCE(p.civil_status::text, ''), COALESCE(p.religion, ''), COALESCE(p.religion_detail, ''), COALESCE(p.caste, ''),
+              COALESCE(p.height_cm, 0), COALESCE(p.weight_kg, 0), COALESCE(p.dietary_preference::text, ''), COALESCE(p.smoking::text, ''), COALESCE(p.alcohol::text, ''),
+              COALESCE(p.languages, ARRAY[]::text[]),
+              COALESCE(p.country_code, ''), COALESCE(p.province, ''), COALESCE(p.district, ''), COALESCE(p.city, ''), COALESCE(p.postal_code, ''),
+              COALESCE(p.highest_education::text, ''), COALESCE(p.field_of_study, ''), COALESCE(p.institution, ''), COALESCE(p.employment_status::text, ''), COALESCE(p.occupation, ''),
+              COALESCE(p.father_occupation, ''), COALESCE(p.mother_occupation, ''), COALESCE(p.siblings_count, 0), COALESCE(p.siblings::text, ''),
+              COALESCE(p.horoscope_available, false), COALESCE(p.birth_time::text, ''), COALESCE(p.birth_place, ''), COALESCE(p.sinhala_raasi, ''), COALESCE(p.nakshatra, ''), COALESCE(p.horoscope::text, ''),
+              COALESCE(p.profile_image_url, ''), COALESCE(p.profile_image_thumb_url, ''), COALESCE(p.verified, false), COALESCE(p.moderation_status, ''), COALESCE(p.last_active_at::text, ''), COALESCE(p.metadata::text, ''),
+              p.created_at, p.updated_at
+       FROM profiles p JOIN users u ON p.user_id = u.id WHERE p.user_id = ANY($1)`, pq.Array(userIDs))
+	if err != nil {
+		log.Printf("ProfileRepository.GetByUserIDs query error: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var profile models.UserProfile
+		if err := rows.Scan(
+			&profile.ID, &profile.UserID, &profile.Username, &profile.Bio, &profile.Gender,
+			&profile.DateOfBirth, &profile.LocationLegacy, pq.Array(&profile.Interests),
+			&profile.CivilStatus, &profile.Religion, &profile.ReligionDetail, &profile.Caste,
+			&profile.HeightCM, &profile.WeightKG, &profile.DietaryPreference, &profile.Smoking, &profile.Alcohol,
+			pq.Array(&profile.Languages), &profile.CountryCode, &profile.Province,
+			&profile.District, &profile.City, &profile.PostalCode,
+			&profile.HighestEducation, &profile.FieldOfStudy, &profile.Institution, &profile.EmploymentStatus, &profile.Occupation,
+			&profile.FatherOccupation, &profile.MotherOccupation, &profile.SiblingsCount, &profile.Siblings,
+			&profile.HoroscopeAvailable, &profile.BirthTime, &profile.BirthPlace, &profile.SinhalaRaasi, &profile.Nakshatra, &profile.Horoscope,
+			&profile.ProfileImageURL, &profile.ProfileImageThumbURL, &profile.Verified, &profile.ModerationStatus, &profile.LastActiveAt, &profile.Metadata,
+			&profile.CreatedAt, &profile.UpdatedAt,
+		); err != nil {
+			log.Printf("ProfileRepository.GetByUserIDs scan error: %v", err)
+			return nil, err
+		}
+		profiles[profile.UserID] = profile
+	}
+	if err := rows.Err(); err != nil {
+		log.Printf("ProfileRepository.GetByUserIDs rows error: %v", err)
+		return nil, err
+	}
+
+	return profiles, nil
+}
+
 // GetAll retrieves all profiles.
 func (r *ProfileRepository) GetAll() ([]models.UserProfile, error) {
 	rows, err := r.db.Query(`

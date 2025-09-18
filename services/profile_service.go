@@ -71,6 +71,16 @@ func (s *ProfileService) GetProfiles() ([]models.UserProfile, error) {
 	return profiles, nil
 }
 
+// GetProfilesByUserIDs retrieves profiles indexed by user ID for the provided IDs.
+func (s *ProfileService) GetProfilesByUserIDs(userIDs []int) (map[int]models.UserProfile, error) {
+	profiles, err := s.repo.GetByUserIDs(userIDs)
+	if err != nil {
+		log.Printf("GetProfilesByUserIDs repository error: %v", err)
+		return nil, err
+	}
+	return profiles, nil
+}
+
 // GetProfileByUserID retrieves a profile by user ID.
 func (s *ProfileService) GetProfileByUserID(userID int) (models.UserProfile, error) {
 	profile, err := s.repo.GetByUserID(userID)
