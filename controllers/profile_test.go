@@ -139,6 +139,47 @@ func TestGetProfilesSuccess(t *testing.T) {
 	}
 }
 
+func TestGetProfilesWithFilters(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("error creating sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	mock.ExpectQuery("SELECT p.id, p.user_id").
+		WithArgs("female", 30, true).
+		WillReturnRows(mockProfileRows())
+
+	router := setupProfileRouter(db, false)
+	req := httptest.NewRequest(http.MethodGet, "/profiles?gender=female&age=30&horoscope_available=true", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200 got %d: %s", w.Code, w.Body.String())
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet db expectations: %v", err)
+	}
+}
+
+func TestGetProfilesInvalidAgeFilter(t *testing.T) {
+	db, _, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("error creating sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	router := setupProfileRouter(db, false)
+	req := httptest.NewRequest(http.MethodGet, "/profiles?age=notanumber", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400 got %d: %s", w.Code, w.Body.String())
+	}
+}
+
 func TestGetUserProfileSuccess(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {

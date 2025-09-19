@@ -3,7 +3,9 @@ package repositories
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
+	"strings"
 
 	"github.com/icpinto/dating-app/models"
 	"github.com/lib/pq"
@@ -198,7 +200,12 @@ func (r *ProfileRepository) GetByUserIDs(userIDs []int) (map[int]models.UserProf
 
 // GetAll retrieves all profiles.
 func (r *ProfileRepository) GetAll() ([]models.UserProfile, error) {
-	rows, err := r.db.Query(`
+	return r.GetAllWithFilters(models.ProfileFilters{})
+}
+
+// GetAllWithFilters retrieves profiles applying optional filters.
+func (r *ProfileRepository) GetAllWithFilters(filters models.ProfileFilters) ([]models.UserProfile, error) {
+	baseQuery := `
                SELECT p.id, p.user_id, u.username, p.bio, COALESCE(p.gender::text, ''), p.date_of_birth,
                       COALESCE(p.location_legacy, ''), COALESCE(p.interests, ARRAY[]::text[]),
                       COALESCE(p.civil_status::text, ''), COALESCE(p.religion, ''), COALESCE(p.religion_detail, ''), COALESCE(p.caste, ''),
@@ -210,7 +217,69 @@ func (r *ProfileRepository) GetAll() ([]models.UserProfile, error) {
                       COALESCE(p.horoscope_available, false), COALESCE(p.birth_time::text, ''), COALESCE(p.birth_place, ''), COALESCE(p.sinhala_raasi, ''), COALESCE(p.nakshatra, ''), COALESCE(p.horoscope::text, ''),
                       COALESCE(p.profile_image_url, ''), COALESCE(p.profile_image_thumb_url, ''), COALESCE(p.verified, false), COALESCE(p.moderation_status, ''), COALESCE(p.last_active_at::text, ''), COALESCE(p.metadata::text, ''),
                       p.created_at, p.updated_at
-               FROM profiles p JOIN users u ON p.user_id = u.id`)
+               FROM profiles p JOIN users u ON p.user_id = u.id`
+
+	var conditions []string
+	var args []interface{}
+	argPos := 1
+
+	if filters.Gender != "" {
+		conditions = append(conditions, fmt.Sprintf("p.gender::text = $%d", argPos))
+		args = append(args, filters.Gender)
+		argPos++
+	}
+	if filters.Age != nil {
+		conditions = append(conditions, fmt.Sprintf("DATE_PART('year', AGE(CURRENT_DATE, p.date_of_birth::date)) = $%d", argPos))
+		args = append(args, *filters.Age)
+		argPos++
+	}
+	if filters.CivilStatus != "" {
+		conditions = append(conditions, fmt.Sprintf("p.civil_status::text = $%d", argPos))
+		args = append(args, filters.CivilStatus)
+		argPos++
+	}
+	if filters.Religion != "" {
+		conditions = append(conditions, fmt.Sprintf("p.religion = $%d", argPos))
+		args = append(args, filters.Religion)
+		argPos++
+	}
+	if filters.DietaryPreference != "" {
+		conditions = append(conditions, fmt.Sprintf("p.dietary_preference::text = $%d", argPos))
+		args = append(args, filters.DietaryPreference)
+		argPos++
+	}
+	if filters.Smoking != "" {
+		conditions = append(conditions, fmt.Sprintf("p.smoking::text = $%d", argPos))
+		args = append(args, filters.Smoking)
+		argPos++
+	}
+	if filters.CountryCode != "" {
+		conditions = append(conditions, fmt.Sprintf("p.country_code = $%d", argPos))
+		args = append(args, filters.CountryCode)
+		argPos++
+	}
+	if filters.HighestEducation != "" {
+		conditions = append(conditions, fmt.Sprintf("p.highest_education::text = $%d", argPos))
+		args = append(args, filters.HighestEducation)
+		argPos++
+	}
+	if filters.EmploymentStatus != "" {
+		conditions = append(conditions, fmt.Sprintf("p.employment_status::text = $%d", argPos))
+		args = append(args, filters.EmploymentStatus)
+		argPos++
+	}
+	if filters.HoroscopeAvailable != nil {
+		conditions = append(conditions, fmt.Sprintf("p.horoscope_available = $%d", argPos))
+		args = append(args, *filters.HoroscopeAvailable)
+		argPos++
+	}
+
+	query := baseQuery
+	if len(conditions) > 0 {
+		query = fmt.Sprintf("%s WHERE %s", baseQuery, strings.Join(conditions, " AND "))
+	}
+
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		log.Printf("ProfileRepository.GetAll query error: %v", err)
 		return nil, err

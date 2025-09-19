@@ -134,7 +134,36 @@ func GetProfile(ctx *gin.Context) {
 func GetProfiles(ctx *gin.Context) {
 	profileService := ctx.MustGet("profileService").(*services.ProfileService)
 
-	profiles, err := profileService.GetProfiles()
+	filters := models.ProfileFilters{
+		Gender:            ctx.Query("gender"),
+		CivilStatus:       ctx.Query("civil_status"),
+		Religion:          ctx.Query("religion"),
+		DietaryPreference: ctx.Query("dietary_preference"),
+		Smoking:           ctx.Query("smoking"),
+		CountryCode:       ctx.Query("country_code"),
+		HighestEducation:  ctx.Query("highest_education"),
+		EmploymentStatus:  ctx.Query("employment_status"),
+	}
+
+	if ageStr := ctx.Query("age"); ageStr != "" {
+		age, err := strconv.Atoi(ageStr)
+		if err != nil {
+			utils.RespondError(ctx, http.StatusBadRequest, err, "GetProfiles invalid age filter", "Invalid age filter")
+			return
+		}
+		filters.Age = &age
+	}
+
+	if horoscopeStr := ctx.Query("horoscope_available"); horoscopeStr != "" {
+		horoscope, err := strconv.ParseBool(horoscopeStr)
+		if err != nil {
+			utils.RespondError(ctx, http.StatusBadRequest, err, "GetProfiles invalid horoscope filter", "Invalid horoscope filter")
+			return
+		}
+		filters.HoroscopeAvailable = &horoscope
+	}
+
+	profiles, err := profileService.GetProfiles(filters)
 	if err != nil {
 		utils.RespondError(ctx, http.StatusInternalServerError, err, "GetProfiles service error", "Failed to retrieve profiles")
 		return
