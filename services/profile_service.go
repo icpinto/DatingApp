@@ -61,9 +61,9 @@ func (s *ProfileService) GetProfile(username string) (models.UserProfile, error)
 	return profile, nil
 }
 
-// GetProfiles retrieves all profiles.
-func (s *ProfileService) GetProfiles() ([]models.UserProfile, error) {
-	profiles, err := s.repo.GetAll()
+// GetProfiles retrieves profiles, applying optional filters when provided.
+func (s *ProfileService) GetProfiles(filters models.ProfileFilters) ([]models.UserProfile, error) {
+	profiles, err := s.repo.GetAllWithFilters(filters)
 	if err != nil {
 		log.Printf("GetProfiles repository error: %v", err)
 		return nil, err

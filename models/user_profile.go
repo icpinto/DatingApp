@@ -68,3 +68,17 @@ type ProfileEnums struct {
 	EducationLevel    []string `json:"education_level"`
 	EmploymentStatus  []string `json:"employment_status"`
 }
+
+// ProfileFilters represents optional filters when querying profiles.
+type ProfileFilters struct {
+	Gender             string
+	Age                *int
+	CivilStatus        string
+	Religion           string
+	DietaryPreference  string
+	Smoking            string
+	CountryCode        string
+	HighestEducation   string
+	EmploymentStatus   string
+	HoroscopeAvailable *bool
+}
