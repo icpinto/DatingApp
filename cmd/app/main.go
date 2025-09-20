@@ -1,3 +1,10 @@
+// @title           Dating App API
+// @version         1.0
+// @description     API documentation for the Dating App backend.
+// @BasePath        /
+// @securityDefinitions.apikey BearerAuth
+// @in              header
+// @name            Authorization
 package main
 
 import (
@@ -9,10 +16,13 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/icpinto/dating-app/controllers"
+	docs "github.com/icpinto/dating-app/docs"
 	"github.com/icpinto/dating-app/internals/db"
 	"github.com/icpinto/dating-app/middlewares"
 	"github.com/icpinto/dating-app/services"
 	_ "github.com/lib/pq"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func main() {
@@ -39,8 +49,13 @@ func main() {
 }
 
 func setupRouter(sqlDB *sql.DB, matchServiceURL string) *gin.Engine {
+	docs.SwaggerInfo.BasePath = "/"
+
 	router := gin.Default()
 	router.Static("/uploads", "./uploads")
+
+	// Swagger documentation endpoint.
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000"},

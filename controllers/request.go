@@ -12,6 +12,20 @@ import (
 	"github.com/icpinto/dating-app/utils"
 )
 
+// SendFriendRequest godoc
+// @Summary      Send a friend request
+// @Description  Sends a friend request from the authenticated user to another user.
+// @Tags         Friend Requests
+// @Accept       json
+// @Produce      json
+// @Param        request  body      models.FriendRequest  true  "Friend request payload"
+// @Success      200      {object}  utils.MessageResponse
+// @Failure      400      {object}  utils.ErrorResponse
+// @Failure      401      {object}  utils.ErrorResponse
+// @Failure      409      {object}  utils.ErrorResponse
+// @Failure      500      {object}  utils.ErrorResponse
+// @Security     BearerAuth
+// @Router       /user/sendRequest [post]
 func SendFriendRequest(ctx *gin.Context) {
 	username, exists := ctx.Get("username")
 	if !exists {
@@ -41,6 +55,17 @@ func SendFriendRequest(ctx *gin.Context) {
 	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"message": "Friend request sent successfully"})
 }
 
+// AcceptFriendRequest godoc
+// @Summary      Accept a friend request
+// @Tags         Friend Requests
+// @Accept       json
+// @Produce      json
+// @Param        request  body      models.AcceptRequest  true  "Friend request to accept"
+// @Success      200      {object}  utils.MessageResponse
+// @Failure      400      {object}  utils.ErrorResponse
+// @Failure      500      {object}  utils.ErrorResponse
+// @Security     BearerAuth
+// @Router       /user/acceptRequest [post]
 func AcceptFriendRequest(ctx *gin.Context) {
 	var request models.AcceptRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
@@ -59,6 +84,17 @@ func AcceptFriendRequest(ctx *gin.Context) {
 	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"message": "Friend request accepted and conversation created"})
 }
 
+// RejectFriendRequest godoc
+// @Summary      Reject a friend request
+// @Tags         Friend Requests
+// @Accept       json
+// @Produce      json
+// @Param        request  body      models.RejectRequest  true  "Friend request to reject"
+// @Success      200      {object}  utils.MessageResponse
+// @Failure      400      {object}  utils.ErrorResponse
+// @Failure      500      {object}  utils.ErrorResponse
+// @Security     BearerAuth
+// @Router       /user/rejectRequest [post]
 func RejectFriendRequest(ctx *gin.Context) {
 	var request models.RejectRequest
 
@@ -78,6 +114,15 @@ func RejectFriendRequest(ctx *gin.Context) {
 	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"message": "Friend request rejected successfully"})
 }
 
+// GetPendingRequests godoc
+// @Summary      List pending friend requests
+// @Tags         Friend Requests
+// @Produce      json
+// @Success      200  {object}  utils.FriendRequestsResponse
+// @Failure      401  {object}  utils.ErrorResponse
+// @Failure      500  {object}  utils.ErrorResponse
+// @Security     BearerAuth
+// @Router       /user/requests [get]
 func GetPendingRequests(ctx *gin.Context) {
 	username, exists := ctx.Get("username")
 	if !exists {
@@ -97,6 +142,15 @@ func GetPendingRequests(ctx *gin.Context) {
 	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"requests": requests})
 }
 
+// GetSentRequests godoc
+// @Summary      List sent friend requests
+// @Tags         Friend Requests
+// @Produce      json
+// @Success      200  {object}  utils.FriendRequestsResponse
+// @Failure      401  {object}  utils.ErrorResponse
+// @Failure      500  {object}  utils.ErrorResponse
+// @Security     BearerAuth
+// @Router       /user/sentRequests [get]
 func GetSentRequests(ctx *gin.Context) {
 	username, exists := ctx.Get("username")
 	if !exists {
@@ -116,6 +170,17 @@ func GetSentRequests(ctx *gin.Context) {
 	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"requests": requests})
 }
 
+// CheckReqStatus godoc
+// @Summary      Check the friend request status with another user
+// @Tags         Friend Requests
+// @Produce      json
+// @Param        reciver_id  path      int  true  "Receiver user ID"
+// @Success      200         {object}  utils.FriendRequestStatusResponse
+// @Failure      400         {object}  utils.ErrorResponse
+// @Failure      401         {object}  utils.ErrorResponse
+// @Failure      500         {object}  utils.ErrorResponse
+// @Security     BearerAuth
+// @Router       /user/checkReqStatus/{reciver_id} [get]
 func CheckReqStatus(ctx *gin.Context) {
 	username, exists := ctx.Get("username")
 	if !exists {

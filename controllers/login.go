@@ -23,6 +23,18 @@ func init() {
 	}
 }*/
 
+// Register godoc
+// @Summary      Register a new user
+// @Description  Create a new user account with a username, email, and password.
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        user  body      models.User           true  "User registration data"
+// @Success      200   {object}  utils.MessageResponse
+// @Failure      400   {object}  utils.ErrorResponse
+// @Failure      409   {object}  utils.ErrorResponse
+// @Failure      500   {object}  utils.ErrorResponse
+// @Router       /register [post]
 func Register(ctx *gin.Context) {
 	userService := ctx.MustGet("userService").(*services.UserService)
 
@@ -46,6 +58,19 @@ func Register(ctx *gin.Context) {
 	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"message": "User registered successfully"})
 }
 
+// Login godoc
+// @Summary      Authenticate a user
+// @Description  Validate credentials and return a JWT access token.
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        credentials  body      models.User        true  "User login credentials"
+// @Success      200          {object}  utils.TokenResponse
+// @Failure      400          {object}  utils.ErrorResponse
+// @Failure      401          {object}  utils.ErrorResponse
+// @Failure      404          {object}  utils.ErrorResponse
+// @Failure      500          {object}  utils.ErrorResponse
+// @Router       /login [post]
 func Login(ctx *gin.Context) {
 	userService := ctx.MustGet("userService").(*services.UserService)
 
