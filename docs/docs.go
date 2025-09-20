@@ -1090,6 +1090,15 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "phone_number": {
+                    "type": "string"
+                },
+                "contact_verified": {
+                    "type": "boolean"
+                },
+                "identity_verified": {
+                    "type": "boolean"
+                },
                 "last_active_at": {
                     "type": "string"
                 },
@@ -1326,6 +1335,15 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "phone_number": {
+                    "type": "string"
+                },
+                "contact_verified": {
+                    "type": "boolean"
+                },
+                "identity_verified": {
+                    "type": "boolean"
                 },
                 "last_active_at": {
                     "type": "string"

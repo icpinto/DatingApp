@@ -25,6 +25,9 @@ type Profile struct {
 	Smoking              string   `json:"smoking"`
 	Alcohol              string   `json:"alcohol"`
 	Languages            []string `json:"languages"`
+	PhoneNumber          string   `json:"phone_number"`
+	ContactVerified      bool     `json:"contact_verified"`
+	IdentityVerified     bool     `json:"identity_verified"`
 	CountryCode          string   `json:"country_code"`
 	Province             string   `json:"province"`
 	District             string   `json:"district"`
@@ -58,6 +61,14 @@ type Profile struct {
 type UserProfile struct {
 	Profile
 	Username string `json:"username"`
+}
+
+// ProfileVerificationStatus captures persisted verification state for a profile.
+type ProfileVerificationStatus struct {
+	PhoneNumber      string
+	ContactVerified  bool
+	IdentityVerified bool
+	Verified         bool
 }
 
 // ProfileEnums represents available enum values for profile fields.

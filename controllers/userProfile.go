@@ -126,13 +126,29 @@ func CreateProfile(ctx *gin.Context) {
 		profile.ProfileImageThumbURL = url
 	}
 
-	if err := profileService.CreateOrUpdateProfile(username.(string), profile); err != nil {
+	phoneNumber := ctx.PostForm("phone_number")
+	contactToken := ctx.PostForm("contact_verification_token")
+	identityToken := ctx.PostForm("id_verification_token")
+	if identityToken == "" {
+		identityToken = ctx.PostForm("identity_verification_token")
+	}
+	if identityToken == "" {
+		identityToken = ctx.PostForm("ID_verification_token")
+	}
+
+	if err := profileService.CreateOrUpdateProfile(username.(string), profile, phoneNumber, contactToken, identityToken); err != nil {
 		logMsg := fmt.Sprintf("CreateProfile service error for %s", username.(string))
 		status := http.StatusInternalServerError
 		clientMsg := "Failed to update profile"
 		if errors.Is(err, services.ErrInvalidEnum) {
 			status = http.StatusBadRequest
 			clientMsg = "Invalid profile data"
+		} else if errors.Is(err, services.ErrInvalidVerificationToken) {
+			status = http.StatusBadRequest
+			clientMsg = "Invalid verification token"
+		} else if errors.Is(err, services.ErrVerificationMismatch) {
+			status = http.StatusBadRequest
+			clientMsg = "Verification data mismatch"
 		}
 		utils.RespondError(ctx, status, err, logMsg, clientMsg)
 		return

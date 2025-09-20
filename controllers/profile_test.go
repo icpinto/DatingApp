@@ -40,17 +40,33 @@ func mockProfileRows() *sqlmock.Rows {
 	columns := []string{
 		"id", "user_id", "username", "bio", "gender", "date_of_birth", "location_legacy", "interests", "civil_status",
 		"religion", "religion_detail", "caste", "height_cm", "weight_kg", "dietary_preference", "smoking", "alcohol",
-		"languages", "country_code", "province", "district", "city", "postal_code", "highest_education", "field_of_study",
+		"languages", "phone_number", "contact_verified", "identity_verified", "country_code", "province", "district", "city", "postal_code", "highest_education", "field_of_study",
 		"institution", "employment_status", "occupation", "father_occupation", "mother_occupation", "siblings_count", "siblings",
 		"horoscope_available", "birth_time", "birth_place", "sinhala_raasi", "nakshatra", "horoscope",
 		"profile_image_url", "profile_image_thumb_url", "verified", "moderation_status", "last_active_at", "metadata",
 		"created_at", "updated_at",
 	}
 	now := time.Now()
-	return sqlmock.NewRows(columns).AddRow(
-		1, 1, "john", "", "", "", "", pq.StringArray{}, "", "", "", "", 0, 0, "", "", "", pq.StringArray{}, "", "", "", "", "", "", "", "", "", "", "", "", 0, "",
-		false, "", "", "", "", "", "", "", false, "", "", "", now, now,
-	)
+	row := make([]driver.Value, len(columns))
+	for i, column := range columns {
+		switch column {
+		case "id", "user_id":
+			row[i] = 1
+		case "username":
+			row[i] = "john"
+		case "interests", "languages":
+			row[i] = pq.StringArray{}
+		case "height_cm", "weight_kg", "siblings_count":
+			row[i] = 0
+		case "horoscope_available", "contact_verified", "identity_verified", "verified":
+			row[i] = false
+		case "created_at", "updated_at":
+			row[i] = now
+		default:
+			row[i] = ""
+		}
+	}
+	return sqlmock.NewRows(columns).AddRow(row...)
 }
 
 func TestCreateProfileSuccess(t *testing.T) {
@@ -63,8 +79,11 @@ func TestCreateProfileSuccess(t *testing.T) {
 	mock.ExpectQuery("SELECT id FROM users WHERE username=\\$1").
 		WithArgs("john").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+	mock.ExpectQuery("SELECT COALESCE\\(phone_number, ''\\), COALESCE\\(contact_verified, false\\), COALESCE\\(identity_verified, false\\), COALESCE\\(verified, false\\) FROM profiles WHERE user_id = \\$1").
+		WithArgs(1).
+		WillReturnRows(sqlmock.NewRows([]string{"phone_number", "contact_verified", "identity_verified", "verified"}))
 
-	args := make([]driver.Value, 42)
+	args := make([]driver.Value, 45)
 	for i := range args {
 		args[i] = sqlmock.AnyArg()
 	}
