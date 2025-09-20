@@ -26,6 +26,35 @@ func filterEmptyStrings(values []string) []string {
 	return result
 }
 
+// CreateProfile godoc
+// @Summary      Create or update the authenticated user's profile
+// @Description  Updates the profile information for the authenticated user. Supports multipart form data with optional profile image upload.
+// @Tags         Profiles
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        bio                   formData  string false "Biography"
+// @Param        gender                formData  string false "Gender"
+// @Param        date_of_birth         formData  string false "Date of birth (YYYY-MM-DD)"
+// @Param        location              formData  string false "Location"
+// @Param        interests             formData  string false "Interests (can be repeated)"
+// @Param        civil_status          formData  string false "Civil status"
+// @Param        religion              formData  string false "Religion"
+// @Param        dietary_preference    formData  string false "Dietary preference"
+// @Param        smoking               formData  string false "Smoking habit"
+// @Param        alcohol               formData  string false "Alcohol habit"
+// @Param        languages             formData  string false "Languages (can be repeated)"
+// @Param        highest_education     formData  string false "Highest education"
+// @Param        employment_status     formData  string false "Employment status"
+// @Param        occupation            formData  string false "Occupation"
+// @Param        siblings_count        formData  int    false "Number of siblings"
+// @Param        horoscope_available   formData  bool   false "Whether a horoscope is available"
+// @Param        profile_image         formData  file   false "Profile image"
+// @Success      200                   {object}  utils.MessageResponse
+// @Failure      400                   {object}  utils.ErrorResponse
+// @Failure      401                   {object}  utils.ErrorResponse
+// @Failure      500                   {object}  utils.ErrorResponse
+// @Security     BearerAuth
+// @Router       /user/profile [post]
 func CreateProfile(ctx *gin.Context) {
 	username, exists := ctx.Get("username")
 	if !exists {
@@ -112,6 +141,15 @@ func CreateProfile(ctx *gin.Context) {
 	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"message": "Profile updated successfully"})
 }
 
+// GetProfile godoc
+// @Summary      Retrieve the authenticated user's profile
+// @Tags         Profiles
+// @Produce      json
+// @Success      200  {object}  models.UserProfile
+// @Failure      401  {object}  utils.ErrorResponse
+// @Failure      500  {object}  utils.ErrorResponse
+// @Security     BearerAuth
+// @Router       /user/profile [get]
 func GetProfile(ctx *gin.Context) {
 	username, exists := ctx.Get("username")
 	if !exists {
@@ -131,6 +169,25 @@ func GetProfile(ctx *gin.Context) {
 	utils.RespondSuccess(ctx, http.StatusOK, profile)
 }
 
+// GetProfiles godoc
+// @Summary      List user profiles with optional filters
+// @Tags         Profiles
+// @Produce      json
+// @Param        gender               query     string false "Filter by gender"
+// @Param        civil_status         query     string false "Filter by civil status"
+// @Param        religion             query     string false "Filter by religion"
+// @Param        dietary_preference   query     string false "Filter by dietary preference"
+// @Param        smoking              query     string false "Filter by smoking habit"
+// @Param        country_code         query     string false "Filter by country code"
+// @Param        highest_education    query     string false "Filter by education"
+// @Param        employment_status    query     string false "Filter by employment status"
+// @Param        age                  query     int    false "Filter by age"
+// @Param        horoscope_available  query     bool   false "Filter by horoscope availability"
+// @Success      200                  {array}   models.UserProfile
+// @Failure      400                  {object}  utils.ErrorResponse
+// @Failure      500                  {object}  utils.ErrorResponse
+// @Security     BearerAuth
+// @Router       /user/profiles [get]
 func GetProfiles(ctx *gin.Context) {
 	profileService := ctx.MustGet("profileService").(*services.ProfileService)
 
@@ -171,6 +228,16 @@ func GetProfiles(ctx *gin.Context) {
 	utils.RespondSuccess(ctx, http.StatusOK, profiles)
 }
 
+// GetUserProfile godoc
+// @Summary      Retrieve a user profile by ID
+// @Tags         Profiles
+// @Produce      json
+// @Param        user_id  path      int  true  "User ID"
+// @Success      200      {object}  models.UserProfile
+// @Failure      400      {object}  utils.ErrorResponse
+// @Failure      500      {object}  utils.ErrorResponse
+// @Security     BearerAuth
+// @Router       /user/profile/{user_id} [get]
 func GetUserProfile(ctx *gin.Context) {
 	userIDParam := ctx.Param("user_id")
 
@@ -193,6 +260,13 @@ func GetUserProfile(ctx *gin.Context) {
 }
 
 // GetProfileEnums returns enum values for profile-related fields.
+// GetProfileEnums godoc
+// @Summary      Retrieve supported enum values for profile fields
+// @Tags         Profiles
+// @Produce      json
+// @Success      200  {object}  models.ProfileEnums
+// @Failure      500  {object}  utils.ErrorResponse
+// @Router       /profile/enums [get]
 func GetProfileEnums(ctx *gin.Context) {
 	profileService := ctx.MustGet("profileService").(*services.ProfileService)
 

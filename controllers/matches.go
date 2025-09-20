@@ -11,7 +11,20 @@ import (
 	"github.com/icpinto/dating-app/utils"
 )
 
-// GetUserMatches returns best matches for the specified user by combining microservice scores with profile data.
+// GetUserMatches godoc
+// @Summary      Retrieve the best matches for a user
+// @Description  Combines compatibility scores from the matching service with profile details.
+// @Tags         Matches
+// @Produce      json
+// @Param        user_id  path      int     true  "User ID"
+// @Param        limit    query     int     false "Optional limit for number of matches"
+// @Param        offset   query     int     false "Optional offset for pagination"
+// @Param        minScore query     number  false "Minimum score filter"
+// @Success      200      {array}   models.MatchedProfile
+// @Failure      400      {object}  utils.ErrorResponse
+// @Failure      500      {object}  utils.ErrorResponse
+// @Security     BearerAuth
+// @Router       /user/matches/{user_id} [get]
 func GetUserMatches(ctx *gin.Context) {
 	matchService := ctx.MustGet("matchService").(*services.MatchService)
 	profileService := ctx.MustGet("profileService").(*services.ProfileService)

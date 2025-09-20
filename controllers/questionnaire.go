@@ -10,6 +10,14 @@ import (
 	"github.com/icpinto/dating-app/utils"
 )
 
+// GetQuestionnaire godoc
+// @Summary      Retrieve matchmaking questionnaire
+// @Tags         Questionnaire
+// @Produce      json
+// @Success      200  {object}  utils.QuestionnaireResponse
+// @Failure      500  {object}  utils.ErrorResponse
+// @Security     BearerAuth
+// @Router       /user/questionnaire [get]
 func GetQuestionnaire(ctx *gin.Context) {
 	questionnaireService := ctx.MustGet("questionnaireService").(*services.QuestionnaireService)
 
@@ -21,6 +29,18 @@ func GetQuestionnaire(ctx *gin.Context) {
 	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"questions": questions})
 }
 
+// SubmitQuestionnaire godoc
+// @Summary      Submit questionnaire answers
+// @Tags         Questionnaire
+// @Accept       json
+// @Produce      json
+// @Param        answer  body      models.Answer  true  "Questionnaire answer"
+// @Success      200     {object}  utils.MessageResponse
+// @Failure      400     {object}  utils.ErrorResponse
+// @Failure      401     {object}  utils.ErrorResponse
+// @Failure      500     {object}  utils.ErrorResponse
+// @Security     BearerAuth
+// @Router       /user/submitQuestionnaire [post]
 func SubmitQuestionnaire(ctx *gin.Context) {
 	username, exists := ctx.Get("username")
 	if !exists {
@@ -45,6 +65,15 @@ func SubmitQuestionnaire(ctx *gin.Context) {
 	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"message": "Answers submitted successfully"})
 }
 
+// GetUserAnswers godoc
+// @Summary      Retrieve questionnaire answers for the authenticated user
+// @Tags         Questionnaire
+// @Produce      json
+// @Success      200  {object}  utils.AnswersResponse
+// @Failure      401  {object}  utils.ErrorResponse
+// @Failure      500  {object}  utils.ErrorResponse
+// @Security     BearerAuth
+// @Router       /user/questionnaireAnswers [get]
 func GetUserAnswers(ctx *gin.Context) {
 	username, exists := ctx.Get("username")
 	if !exists {

@@ -1,8 +1,10 @@
 package utils
 
 import (
-	"github.com/gin-gonic/gin"
 	"log"
+
+	"github.com/gin-gonic/gin"
+	"github.com/icpinto/dating-app/models"
 )
 
 // RespondSuccess sends a JSON response with the provided status and payload.
@@ -25,4 +27,41 @@ func RespondError(ctx *gin.Context, status int, err error, logMsg, clientMsg str
 	}
 
 	ctx.JSON(status, response)
+}
+
+// MessageResponse represents a generic message payload.
+type MessageResponse struct {
+	Message string `json:"message"`
+}
+
+// TokenResponse represents a JWT token response.
+type TokenResponse struct {
+	Token  string `json:"token"`
+	UserID int    `json:"user_id"`
+}
+
+// ErrorResponse represents an error message returned to the client.
+type ErrorResponse struct {
+	Error   string `json:"error"`
+	Details string `json:"details,omitempty"`
+}
+
+// FriendRequestsResponse wraps a list of friend requests.
+type FriendRequestsResponse struct {
+	Requests []models.FriendRequest `json:"requests"`
+}
+
+// QuestionnaireResponse wraps questionnaire questions.
+type QuestionnaireResponse struct {
+	Questions []models.Question `json:"questions"`
+}
+
+// AnswersResponse wraps questionnaire answers for a user.
+type AnswersResponse struct {
+	Answers []models.Answer `json:"answers"`
+}
+
+// FriendRequestStatusResponse represents the friend request status between two users.
+type FriendRequestStatusResponse struct {
+	RequestStatus bool `json:"requestStatus"`
 }
