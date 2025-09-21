@@ -1003,6 +1003,9 @@ const docTemplate = `{
                 "status": {
                     "type": "string"
                 },
+                "description": {
+                    "type": "string"
+                },
                 "updated_at": {
                     "type": "string"
                 }

@@ -34,9 +34,9 @@ func (r *FriendRequestRepository) CheckExisting(senderID, receiverID int) (strin
 // Create inserts a new friend request.
 func (r *FriendRequestRepository) Create(request models.FriendRequest) error {
 	_, err := r.db.Exec(`
-            INSERT INTO friend_requests (sender_id, sender_username, receiver_id, receiver_username, status, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-		request.SenderID, request.SenderUsername, request.ReceiverID, request.ReceiverUsername, request.Status, request.CreatedAt, request.UpdatedAt)
+            INSERT INTO friend_requests (sender_id, sender_username, receiver_id, receiver_username, status, description, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+		request.SenderID, request.SenderUsername, request.ReceiverID, request.ReceiverUsername, request.Status, request.Description, request.CreatedAt, request.UpdatedAt)
 	if err != nil {
 		log.Printf("FriendRequestRepository.Create exec error for sender %d and receiver %d: %v", request.SenderID, request.ReceiverID, err)
 	}
@@ -72,7 +72,7 @@ func (r *FriendRequestRepository) GetUsers(requestID int) (int, int, error) {
 // GetPending retrieves all pending friend requests for a user.
 func (r *FriendRequestRepository) GetPending(userID int) ([]models.FriendRequest, error) {
 	rows, err := r.db.Query(`
-       SELECT id, sender_id, sender_username, receiver_id, receiver_username, status, created_at
+       SELECT id, sender_id, sender_username, receiver_id, receiver_username, status, description, created_at
        FROM friend_requests
        WHERE receiver_id = $1 AND status = 'pending'`, userID)
 	if err != nil {
@@ -84,7 +84,7 @@ func (r *FriendRequestRepository) GetPending(userID int) ([]models.FriendRequest
 	var requests []models.FriendRequest
 	for rows.Next() {
 		var request models.FriendRequest
-		if err := rows.Scan(&request.RequestId, &request.SenderID, &request.SenderUsername, &request.ReceiverID, &request.ReceiverUsername, &request.Status, &request.CreatedAt); err != nil {
+		if err := rows.Scan(&request.RequestId, &request.SenderID, &request.SenderUsername, &request.ReceiverID, &request.ReceiverUsername, &request.Status, &request.Description, &request.CreatedAt); err != nil {
 			log.Printf("FriendRequestRepository.GetPending scan error: %v", err)
 			return nil, err
 		}
@@ -100,7 +100,7 @@ func (r *FriendRequestRepository) GetPending(userID int) ([]models.FriendRequest
 // GetSent retrieves all friend requests sent by a user.
 func (r *FriendRequestRepository) GetSent(userID int) ([]models.FriendRequest, error) {
 	rows, err := r.db.Query(`
-       SELECT id, sender_id, sender_username, receiver_id, receiver_username, status, created_at, updated_at
+       SELECT id, sender_id, sender_username, receiver_id, receiver_username, status, description, created_at, updated_at
        FROM friend_requests
        WHERE sender_id = $1`, userID)
 	if err != nil {
@@ -112,7 +112,7 @@ func (r *FriendRequestRepository) GetSent(userID int) ([]models.FriendRequest, e
 	var requests []models.FriendRequest
 	for rows.Next() {
 		var request models.FriendRequest
-		if err := rows.Scan(&request.RequestId, &request.SenderID, &request.SenderUsername, &request.ReceiverID, &request.ReceiverUsername, &request.Status, &request.CreatedAt, &request.UpdatedAt); err != nil {
+		if err := rows.Scan(&request.RequestId, &request.SenderID, &request.SenderUsername, &request.ReceiverID, &request.ReceiverUsername, &request.Status, &request.Description, &request.CreatedAt, &request.UpdatedAt); err != nil {
 			log.Printf("FriendRequestRepository.GetSent scan error: %v", err)
 			return nil, err
 		}

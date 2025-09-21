@@ -53,8 +53,8 @@ func TestSendFriendRequestSuccess(t *testing.T) {
 	mock.ExpectQuery("SELECT status FROM friend_requests WHERE sender_id = \\$1 AND receiver_id = \\$2").
 		WithArgs(1, 2).
 		WillReturnError(sql.ErrNoRows)
-	mock.ExpectExec("INSERT INTO friend_requests \\(sender_id, sender_username, receiver_id, receiver_username, status, created_at, updated_at\\)").
-		WithArgs(1, "john", 2, "jane", "pending", sqlmock.AnyArg(), sqlmock.AnyArg()).
+	mock.ExpectExec("INSERT INTO friend_requests \\(sender_id, sender_username, receiver_id, receiver_username, status, description, created_at, updated_at\\)").
+		WithArgs(1, "john", 2, "jane", "pending", "", sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	router := setupRequestRouter(db, true)
@@ -178,10 +178,10 @@ func TestGetPendingRequestsSuccess(t *testing.T) {
 	mock.ExpectQuery("SELECT id FROM users WHERE username=\\$1").
 		WithArgs("john").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
-	mock.ExpectQuery("SELECT id, sender_id, sender_username, receiver_id, receiver_username, status, created_at FROM friend_requests WHERE receiver_id = \\$1 AND status = 'pending'").
+	mock.ExpectQuery("SELECT id, sender_id, sender_username, receiver_id, receiver_username, status, description, created_at FROM friend_requests WHERE receiver_id = \\$1 AND status = 'pending'").
 		WithArgs(1).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "sender_id", "sender_username", "receiver_id", "receiver_username", "status", "created_at"}).
-			AddRow(10, 2, "", 1, "", "pending", time.Now()))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "sender_id", "sender_username", "receiver_id", "receiver_username", "status", "description", "created_at"}).
+			AddRow(10, 2, "", 1, "", "pending", "Hello!", time.Now()))
 	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1").
 		WithArgs(2).
 		WillReturnRows(sqlmock.NewRows([]string{"username"}).AddRow("alice"))
@@ -215,10 +215,10 @@ func TestGetSentRequestsSuccess(t *testing.T) {
 	mock.ExpectQuery("SELECT id FROM users WHERE username=\\$1").
 		WithArgs("john").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
-	mock.ExpectQuery("SELECT id, sender_id, sender_username, receiver_id, receiver_username, status, created_at, updated_at FROM friend_requests WHERE sender_id = \\$1").
+	mock.ExpectQuery("SELECT id, sender_id, sender_username, receiver_id, receiver_username, status, description, created_at, updated_at FROM friend_requests WHERE sender_id = \\$1").
 		WithArgs(1).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "sender_id", "sender_username", "receiver_id", "receiver_username", "status", "created_at", "updated_at"}).
-			AddRow(11, 1, "", 2, "", "accepted", now, now))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "sender_id", "sender_username", "receiver_id", "receiver_username", "status", "description", "created_at", "updated_at"}).
+			AddRow(11, 1, "", 2, "", "accepted", "Excited to connect", now, now))
 	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1").
 		WithArgs(1).
 		WillReturnRows(sqlmock.NewRows([]string{"username"}).AddRow("john"))
