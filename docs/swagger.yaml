@@ -30,6 +30,8 @@ definitions:
         type: string
       status:
         type: string
+      description:
+        type: string
       updated_at:
         type: string
     type: object

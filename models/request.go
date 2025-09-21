@@ -9,6 +9,7 @@ type FriendRequest struct {
 	ReceiverID       int       `json:"receiver_id"`
 	ReceiverUsername string    `json:"receiver_username"`
 	Status           string    `json:"status"`
+	Description      string    `json:"description,omitempty"`
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
 }
