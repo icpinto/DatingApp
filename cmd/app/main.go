@@ -82,6 +82,7 @@ func setupRouter(sqlDB *sql.DB, matchServiceURL string) *gin.Engine {
 
 	router.POST("/register", controllers.Register)
 	router.POST("/login", controllers.Login)
+	router.POST("/signout", middlewares.Authenticate, controllers.SignOut)
 
 	protected := router.Group("/user")
 	protected.Use(middlewares.Authenticate)

@@ -112,3 +112,18 @@ func Login(ctx *gin.Context) {
 	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"token": token, "user_id": userId})
 
 }
+
+// SignOut godoc
+// @Summary      Sign out a user
+// @Description  Invalidate client-side session by acknowledging the logout request.
+// @Tags         Auth
+// @Produce      json
+// @Success      200  {object}  utils.MessageResponse
+// @Failure      401  {object}  utils.ErrorResponse
+// @Router       /signout [post]
+// @Security     BearerAuth
+func SignOut(ctx *gin.Context) {
+	// Authentication middleware already validates the JWT. Since tokens are stateless,
+	// the client only needs acknowledgement to remove the token locally.
+	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"message": "Signed out successfully"})
+}
