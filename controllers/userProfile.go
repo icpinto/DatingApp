@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -63,6 +64,7 @@ func CreateProfile(ctx *gin.Context) {
 	}
 
 	profileService := ctx.MustGet("profileService").(*services.ProfileService)
+	matchService := ctx.MustGet("matchService").(*services.MatchService)
 
 	var profile models.Profile
 	profile.Bio = ctx.PostForm("bio")
@@ -136,7 +138,8 @@ func CreateProfile(ctx *gin.Context) {
 		identityToken = ctx.PostForm("ID_verification_token")
 	}
 
-	if err := profileService.CreateOrUpdateProfile(username.(string), profile, phoneNumber, contactToken, identityToken); err != nil {
+	persistedProfile, err := profileService.CreateOrUpdateProfile(username.(string), profile, phoneNumber, contactToken, identityToken)
+	if err != nil {
 		logMsg := fmt.Sprintf("CreateProfile service error for %s", username.(string))
 		status := http.StatusInternalServerError
 		clientMsg := "Failed to update profile"
@@ -152,6 +155,13 @@ func CreateProfile(ctx *gin.Context) {
 		}
 		utils.RespondError(ctx, status, err, logMsg, clientMsg)
 		return
+	}
+
+	if _, err := matchService.UpsertProfile(ctx.Request.Context(), persistedProfile); err != nil {
+		log.Printf("CreateProfile match service upsert error for user %s: %v", username.(string), err)
+		if enqueueErr := profileService.EnqueueProfileSync(persistedProfile.UserID); enqueueErr != nil {
+			log.Printf("CreateProfile enqueue sync error for user %s: %v", username.(string), enqueueErr)
+		}
 	}
 
 	utils.RespondSuccess(ctx, http.StatusOK, gin.H{"message": "Profile updated successfully"})

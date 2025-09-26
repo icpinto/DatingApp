@@ -2,6 +2,7 @@ package services
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -17,21 +18,27 @@ import (
 
 // OutboxWorker processes conversation outbox events.
 type OutboxWorker struct {
-	db         *sql.DB
-	outboxRepo *repositories.OutboxRepository
-	frRepo     *repositories.FriendRequestRepository
-	client     *http.Client
-	baseURL    string
+	db                *sql.DB
+	outboxRepo        *repositories.OutboxRepository
+	profileOutboxRepo *repositories.ProfileSyncOutboxRepository
+	profileRepo       *repositories.ProfileRepository
+	frRepo            *repositories.FriendRequestRepository
+	client            *http.Client
+	baseURL           string
+	matchService      *MatchService
 }
 
 // NewOutboxWorker creates a new OutboxWorker.
-func NewOutboxWorker(db *sql.DB, baseURL string) *OutboxWorker {
+func NewOutboxWorker(db *sql.DB, baseURL string, matchService *MatchService) *OutboxWorker {
 	return &OutboxWorker{
-		db:         db,
-		outboxRepo: repositories.NewOutboxRepository(db),
-		frRepo:     repositories.NewFriendRequestRepository(db),
-		client:     &http.Client{Timeout: 5 * time.Second},
-		baseURL:    baseURL,
+		db:                db,
+		outboxRepo:        repositories.NewOutboxRepository(db),
+		profileOutboxRepo: repositories.NewProfileSyncOutboxRepository(db),
+		profileRepo:       repositories.NewProfileRepository(db),
+		frRepo:            repositories.NewFriendRequestRepository(db),
+		client:            &http.Client{Timeout: 5 * time.Second},
+		baseURL:           baseURL,
+		matchService:      matchService,
 	}
 }
 
@@ -46,6 +53,16 @@ func (w *OutboxWorker) Start() {
 }
 
 func (w *OutboxWorker) process() error {
+	if err := w.processConversationEvents(); err != nil {
+		return err
+	}
+	if err := w.processProfileSyncEvents(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (w *OutboxWorker) processConversationEvents() error {
 	events, err := w.outboxRepo.FetchPending(10)
 	if err != nil {
 		return err
@@ -53,6 +70,39 @@ func (w *OutboxWorker) process() error {
 	for _, e := range events {
 		if err := w.handleEvent(e.EventID, e.User1ID, e.User2ID); err != nil {
 			log.Printf("OutboxWorker handle event %s error: %v", e.EventID, err)
+			continue
+		}
+	}
+	return nil
+}
+
+func (w *OutboxWorker) processProfileSyncEvents() error {
+	if w.profileOutboxRepo == nil || w.matchService == nil {
+		return nil
+	}
+	events, err := w.profileOutboxRepo.FetchPending(10)
+	if err != nil {
+		return err
+	}
+	for _, event := range events {
+		profile, err := w.profileRepo.GetByUserID(event.UserID)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				log.Printf("OutboxWorker profile not found for user %d, marking event %s processed", event.UserID, event.EventID)
+				if markErr := w.profileOutboxRepo.MarkProcessed(event.EventID); markErr != nil {
+					log.Printf("OutboxWorker mark processed error for event %s: %v", event.EventID, markErr)
+				}
+				continue
+			}
+			log.Printf("OutboxWorker profile fetch error for user %d: %v", event.UserID, err)
+			continue
+		}
+		if _, err := w.matchService.UpsertProfile(context.Background(), profile.Profile); err != nil {
+			log.Printf("OutboxWorker profile sync error for user %d: %v", event.UserID, err)
+			continue
+		}
+		if err := w.profileOutboxRepo.MarkProcessed(event.EventID); err != nil {
+			log.Printf("OutboxWorker mark processed error for event %s: %v", event.EventID, err)
 			continue
 		}
 	}
