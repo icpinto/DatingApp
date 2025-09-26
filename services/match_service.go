@@ -12,6 +12,61 @@ import (
 	"github.com/icpinto/dating-app/models"
 )
 
+type corePreferencesDTO struct {
+	UserID             int    `json:"userId"`
+	MinAge             int    `json:"minAge"`
+	MaxAge             int    `json:"maxAge"`
+	Gender             string `json:"gender"`
+	DrinkingHabit      string `json:"drinkingHabit"`
+	EducationLevel     string `json:"educationLevel"`
+	SmokingHabit       string `json:"smokingHabit"`
+	CountryOfResidence string `json:"countryOfResidence"`
+	OccupationStatus   string `json:"occupationStatus"`
+	CivilStatus        string `json:"civilStatus"`
+	Religion           string `json:"religion"`
+	MinHeight          int    `json:"minHeight"`
+	MaxHeight          int    `json:"maxHeight"`
+	FoodPreference     string `json:"foodPreference"`
+}
+
+func newCorePreferencesDTO(prefs models.CorePreferences) corePreferencesDTO {
+	return corePreferencesDTO{
+		UserID:             prefs.UserID,
+		MinAge:             prefs.MinAge,
+		MaxAge:             prefs.MaxAge,
+		Gender:             prefs.Gender,
+		DrinkingHabit:      prefs.DrinkingHabit,
+		EducationLevel:     prefs.EducationLevel,
+		SmokingHabit:       prefs.SmokingHabit,
+		CountryOfResidence: prefs.CountryOfResidence,
+		OccupationStatus:   prefs.OccupationStatus,
+		CivilStatus:        prefs.CivilStatus,
+		Religion:           prefs.Religion,
+		MinHeight:          prefs.MinHeight,
+		MaxHeight:          prefs.MaxHeight,
+		FoodPreference:     prefs.FoodPreference,
+	}
+}
+
+func (d corePreferencesDTO) toModel() models.CorePreferences {
+	return models.CorePreferences{
+		UserID:             d.UserID,
+		MinAge:             d.MinAge,
+		MaxAge:             d.MaxAge,
+		Gender:             d.Gender,
+		DrinkingHabit:      d.DrinkingHabit,
+		EducationLevel:     d.EducationLevel,
+		SmokingHabit:       d.SmokingHabit,
+		CountryOfResidence: d.CountryOfResidence,
+		OccupationStatus:   d.OccupationStatus,
+		CivilStatus:        d.CivilStatus,
+		Religion:           d.Religion,
+		MinHeight:          d.MinHeight,
+		MaxHeight:          d.MaxHeight,
+		FoodPreference:     d.FoodPreference,
+	}
+}
+
 // MatchService communicates with the external matching microservice.
 type MatchService struct {
 	client  *http.Client
@@ -90,18 +145,18 @@ func (s *MatchService) GetCorePreferences(ctx context.Context, userID int) (mode
 		return models.CorePreferences{}, fmt.Errorf("match service returned status %d", resp.StatusCode)
 	}
 
-	var prefs models.CorePreferences
-	if err := json.NewDecoder(resp.Body).Decode(&prefs); err != nil {
+	var dto corePreferencesDTO
+	if err := json.NewDecoder(resp.Body).Decode(&dto); err != nil {
 		return models.CorePreferences{}, err
 	}
 
-	return prefs, nil
+	return dto.toModel(), nil
 }
 
 func (s *MatchService) sendCorePreferences(ctx context.Context, method string, prefs models.CorePreferences) (models.CorePreferences, error) {
 	endpoint := fmt.Sprintf("%s/core-preferences", s.baseURL)
 
-	payload, err := json.Marshal(prefs)
+	payload, err := json.Marshal(newCorePreferencesDTO(prefs))
 	if err != nil {
 		return models.CorePreferences{}, err
 	}
@@ -122,10 +177,10 @@ func (s *MatchService) sendCorePreferences(ctx context.Context, method string, p
 		return models.CorePreferences{}, fmt.Errorf("match service returned status %d", resp.StatusCode)
 	}
 
-	var saved models.CorePreferences
+	var saved corePreferencesDTO
 	if err := json.NewDecoder(resp.Body).Decode(&saved); err != nil {
 		return models.CorePreferences{}, err
 	}
 
-	return saved, nil
+	return saved.toModel(), nil
 }
