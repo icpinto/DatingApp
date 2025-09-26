@@ -29,6 +29,57 @@ type corePreferencesDTO struct {
 	FoodPreference     string `json:"foodPreference"`
 }
 
+type profileDTO struct {
+	ID                   int      `json:"id"`
+	UserID               int      `json:"userId"`
+	Bio                  string   `json:"bio"`
+	Gender               string   `json:"gender"`
+	DateOfBirth          string   `json:"dateOfBirth"`
+	LocationLegacy       string   `json:"location"`
+	Interests            []string `json:"interests"`
+	CivilStatus          string   `json:"civilStatus"`
+	Religion             string   `json:"religion"`
+	ReligionDetail       string   `json:"religionDetail"`
+	Caste                string   `json:"caste"`
+	HeightCM             int      `json:"heightCm"`
+	WeightKG             int      `json:"weightKg"`
+	DietaryPreference    string   `json:"dietaryPreference"`
+	Smoking              string   `json:"smoking"`
+	Alcohol              string   `json:"alcohol"`
+	Languages            []string `json:"languages"`
+	PhoneNumber          string   `json:"phoneNumber"`
+	ContactVerified      bool     `json:"contactVerified"`
+	IdentityVerified     bool     `json:"identityVerified"`
+	CountryCode          string   `json:"countryCode"`
+	Province             string   `json:"province"`
+	District             string   `json:"district"`
+	City                 string   `json:"city"`
+	PostalCode           string   `json:"postalCode"`
+	HighestEducation     string   `json:"highestEducation"`
+	FieldOfStudy         string   `json:"fieldOfStudy"`
+	Institution          string   `json:"institution"`
+	EmploymentStatus     string   `json:"employmentStatus"`
+	Occupation           string   `json:"occupation"`
+	FatherOccupation     string   `json:"fatherOccupation"`
+	MotherOccupation     string   `json:"motherOccupation"`
+	SiblingsCount        int      `json:"siblingsCount"`
+	Siblings             string   `json:"siblings"`
+	HoroscopeAvailable   bool     `json:"horoscopeAvailable"`
+	BirthTime            string   `json:"birthTime"`
+	BirthPlace           string   `json:"birthPlace"`
+	SinhalaRaasi         string   `json:"sinhalaRaasi"`
+	Nakshatra            string   `json:"nakshatra"`
+	Horoscope            string   `json:"horoscope"`
+	ProfileImageURL      string   `json:"profileImageUrl"`
+	ProfileImageThumbURL string   `json:"profileImageThumbUrl"`
+	Verified             bool     `json:"verified"`
+	ModerationStatus     string   `json:"moderationStatus"`
+	LastActiveAt         string   `json:"lastActiveAt"`
+	Metadata             string   `json:"metadata"`
+	CreatedAt            string   `json:"createdAt"`
+	UpdatedAt            string   `json:"updatedAt"`
+}
+
 func newCorePreferencesDTO(prefs models.CorePreferences) corePreferencesDTO {
 	return corePreferencesDTO{
 		UserID:             prefs.UserID,
@@ -64,6 +115,112 @@ func (d corePreferencesDTO) toModel() models.CorePreferences {
 		MinHeight:          d.MinHeight,
 		MaxHeight:          d.MaxHeight,
 		FoodPreference:     d.FoodPreference,
+	}
+}
+
+func newProfileDTO(profile models.Profile) profileDTO {
+	return profileDTO{
+		ID:                   profile.ID,
+		UserID:               profile.UserID,
+		Bio:                  profile.Bio,
+		Gender:               profile.Gender,
+		DateOfBirth:          profile.DateOfBirth,
+		LocationLegacy:       profile.LocationLegacy,
+		Interests:            profile.Interests,
+		CivilStatus:          profile.CivilStatus,
+		Religion:             profile.Religion,
+		ReligionDetail:       profile.ReligionDetail,
+		Caste:                profile.Caste,
+		HeightCM:             profile.HeightCM,
+		WeightKG:             profile.WeightKG,
+		DietaryPreference:    profile.DietaryPreference,
+		Smoking:              profile.Smoking,
+		Alcohol:              profile.Alcohol,
+		Languages:            profile.Languages,
+		PhoneNumber:          profile.PhoneNumber,
+		ContactVerified:      profile.ContactVerified,
+		IdentityVerified:     profile.IdentityVerified,
+		CountryCode:          profile.CountryCode,
+		Province:             profile.Province,
+		District:             profile.District,
+		City:                 profile.City,
+		PostalCode:           profile.PostalCode,
+		HighestEducation:     profile.HighestEducation,
+		FieldOfStudy:         profile.FieldOfStudy,
+		Institution:          profile.Institution,
+		EmploymentStatus:     profile.EmploymentStatus,
+		Occupation:           profile.Occupation,
+		FatherOccupation:     profile.FatherOccupation,
+		MotherOccupation:     profile.MotherOccupation,
+		SiblingsCount:        profile.SiblingsCount,
+		Siblings:             profile.Siblings,
+		HoroscopeAvailable:   profile.HoroscopeAvailable,
+		BirthTime:            profile.BirthTime,
+		BirthPlace:           profile.BirthPlace,
+		SinhalaRaasi:         profile.SinhalaRaasi,
+		Nakshatra:            profile.Nakshatra,
+		Horoscope:            profile.Horoscope,
+		ProfileImageURL:      profile.ProfileImageURL,
+		ProfileImageThumbURL: profile.ProfileImageThumbURL,
+		Verified:             profile.Verified,
+		ModerationStatus:     profile.ModerationStatus,
+		LastActiveAt:         profile.LastActiveAt,
+		Metadata:             profile.Metadata,
+		CreatedAt:            profile.CreatedAt,
+		UpdatedAt:            profile.UpdatedAt,
+	}
+}
+
+func (d profileDTO) toModel() models.Profile {
+	return models.Profile{
+		ID:                   d.ID,
+		UserID:               d.UserID,
+		Bio:                  d.Bio,
+		Gender:               d.Gender,
+		DateOfBirth:          d.DateOfBirth,
+		LocationLegacy:       d.LocationLegacy,
+		Interests:            d.Interests,
+		CivilStatus:          d.CivilStatus,
+		Religion:             d.Religion,
+		ReligionDetail:       d.ReligionDetail,
+		Caste:                d.Caste,
+		HeightCM:             d.HeightCM,
+		WeightKG:             d.WeightKG,
+		DietaryPreference:    d.DietaryPreference,
+		Smoking:              d.Smoking,
+		Alcohol:              d.Alcohol,
+		Languages:            d.Languages,
+		PhoneNumber:          d.PhoneNumber,
+		ContactVerified:      d.ContactVerified,
+		IdentityVerified:     d.IdentityVerified,
+		CountryCode:          d.CountryCode,
+		Province:             d.Province,
+		District:             d.District,
+		City:                 d.City,
+		PostalCode:           d.PostalCode,
+		HighestEducation:     d.HighestEducation,
+		FieldOfStudy:         d.FieldOfStudy,
+		Institution:          d.Institution,
+		EmploymentStatus:     d.EmploymentStatus,
+		Occupation:           d.Occupation,
+		FatherOccupation:     d.FatherOccupation,
+		MotherOccupation:     d.MotherOccupation,
+		SiblingsCount:        d.SiblingsCount,
+		Siblings:             d.Siblings,
+		HoroscopeAvailable:   d.HoroscopeAvailable,
+		BirthTime:            d.BirthTime,
+		BirthPlace:           d.BirthPlace,
+		SinhalaRaasi:         d.SinhalaRaasi,
+		Nakshatra:            d.Nakshatra,
+		Horoscope:            d.Horoscope,
+		ProfileImageURL:      d.ProfileImageURL,
+		ProfileImageThumbURL: d.ProfileImageThumbURL,
+		Verified:             d.Verified,
+		ModerationStatus:     d.ModerationStatus,
+		LastActiveAt:         d.LastActiveAt,
+		Metadata:             d.Metadata,
+		CreatedAt:            d.CreatedAt,
+		UpdatedAt:            d.UpdatedAt,
 	}
 }
 
@@ -180,6 +337,43 @@ func (s *MatchService) sendCorePreferences(ctx context.Context, method string, p
 	var saved corePreferencesDTO
 	if err := json.NewDecoder(resp.Body).Decode(&saved); err != nil {
 		return models.CorePreferences{}, err
+	}
+
+	return saved.toModel(), nil
+}
+
+// UpsertProfile sends the given profile to the matching microservice.
+func (s *MatchService) UpsertProfile(ctx context.Context, profile models.Profile) (models.Profile, error) {
+	endpoint := fmt.Sprintf("%s/profiles", s.baseURL)
+	method := http.MethodPost
+	if profile.ID != 0 {
+		method = http.MethodPut
+	}
+
+	payload, err := json.Marshal(newProfileDTO(profile))
+	if err != nil {
+		return models.Profile{}, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, endpoint, bytes.NewReader(payload))
+	if err != nil {
+		return models.Profile{}, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return models.Profile{}, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= http.StatusBadRequest {
+		return models.Profile{}, fmt.Errorf("match service returned status %d", resp.StatusCode)
+	}
+
+	var saved profileDTO
+	if err := json.NewDecoder(resp.Body).Decode(&saved); err != nil {
+		return models.Profile{}, err
 	}
 
 	return saved.toModel(), nil

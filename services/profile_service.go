@@ -16,13 +16,18 @@ import (
 
 // ProfileService provides operations for user profiles.
 type ProfileService struct {
-	db   *sql.DB
-	repo *repositories.ProfileRepository
+	db                *sql.DB
+	repo              *repositories.ProfileRepository
+	profileOutboxRepo *repositories.ProfileSyncOutboxRepository
 }
 
 // NewProfileService creates a new ProfileService.
 func NewProfileService(db *sql.DB) *ProfileService {
-	return &ProfileService{db: db, repo: repositories.NewProfileRepository(db)}
+	return &ProfileService{
+		db:                db,
+		repo:              repositories.NewProfileRepository(db),
+		profileOutboxRepo: repositories.NewProfileSyncOutboxRepository(db),
+	}
 }
 
 // ErrInvalidEnum indicates an invalid enum value was provided.
@@ -33,18 +38,18 @@ var ErrInvalidVerificationToken = errors.New("invalid verification token")
 var ErrVerificationMismatch = errors.New("verification data mismatch")
 
 // CreateOrUpdateProfile creates or updates a user's profile.
-func (s *ProfileService) CreateOrUpdateProfile(username string, profile models.Profile, phoneNumber, contactToken, identityToken string) error {
+func (s *ProfileService) CreateOrUpdateProfile(username string, profile models.Profile, phoneNumber, contactToken, identityToken string) (models.Profile, error) {
 	userID, err := repositories.GetUserIDByUsername(s.db, username)
 	if err != nil {
 		log.Printf("CreateOrUpdateProfile user lookup error for %s: %v", username, err)
-		return err
+		return models.Profile{}, err
 	}
 	profile.UserID = userID
 
 	existingStatus, err := s.repo.GetVerificationStatus(userID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.Printf("CreateOrUpdateProfile verification lookup error for user %d: %v", userID, err)
-		return err
+		return models.Profile{}, err
 	}
 
 	if phoneNumber != "" {
@@ -60,18 +65,18 @@ func (s *ProfileService) CreateOrUpdateProfile(username string, profile models.P
 		claims, err := parseVerificationToken(contactToken, getVerificationSecret("CONTACT_VERIFICATION_JWT_SECRET"))
 		if err != nil {
 			log.Printf("CreateOrUpdateProfile contact token error for user %d: %v", userID, err)
-			return err
+			return models.Profile{}, err
 		}
 		phoneFromToken := extractPhoneNumber(claims)
 		if phoneFromToken != "" {
 			if profile.PhoneNumber != "" && !strings.EqualFold(profile.PhoneNumber, phoneFromToken) {
 				log.Printf("CreateOrUpdateProfile phone mismatch for user %d", userID)
-				return ErrVerificationMismatch
+				return models.Profile{}, ErrVerificationMismatch
 			}
 			profile.PhoneNumber = phoneFromToken
 		} else if profile.PhoneNumber == "" {
 			log.Printf("CreateOrUpdateProfile contact token missing phone for user %d", userID)
-			return ErrInvalidVerificationToken
+			return models.Profile{}, ErrInvalidVerificationToken
 		}
 		profile.ContactVerified = true
 	} else if phoneNumber != "" && !strings.EqualFold(phoneNumber, existingStatus.PhoneNumber) {
@@ -83,7 +88,7 @@ func (s *ProfileService) CreateOrUpdateProfile(username string, profile models.P
 	if identityToken != "" {
 		if _, err := parseVerificationToken(identityToken, getVerificationSecret("IDENTITY_VERIFICATION_JWT_SECRET")); err != nil {
 			log.Printf("CreateOrUpdateProfile identity token error for user %d: %v", userID, err)
-			return err
+			return models.Profile{}, err
 		}
 		profile.IdentityVerified = true
 	}
@@ -94,13 +99,18 @@ func (s *ProfileService) CreateOrUpdateProfile(username string, profile models.P
 		if pqErr, ok := err.(*pq.Error); ok {
 			if pqErr.Code == "22P02" && strings.Contains(pqErr.Message, "invalid input value for enum") {
 				log.Printf("CreateOrUpdateProfile invalid enum for user %d: %v", userID, pqErr)
-				return ErrInvalidEnum
+				return models.Profile{}, ErrInvalidEnum
 			}
 		}
 		log.Printf("CreateOrUpdateProfile repository error for user %d: %v", userID, err)
-		return err
+		return models.Profile{}, err
 	}
-	return nil
+	saved, err := s.repo.GetByUserID(userID)
+	if err != nil {
+		log.Printf("CreateOrUpdateProfile fetch error for user %d: %v", userID, err)
+		return models.Profile{}, err
+	}
+	return saved.Profile, nil
 }
 
 // GetProfile retrieves a user's profile by username.
@@ -156,6 +166,18 @@ func (s *ProfileService) GetProfileEnums() (models.ProfileEnums, error) {
 		return models.ProfileEnums{}, err
 	}
 	return enums, nil
+}
+
+// EnqueueProfileSync schedules a profile synchronization attempt with the matching microservice.
+func (s *ProfileService) EnqueueProfileSync(userID int) error {
+	if s.profileOutboxRepo == nil {
+		return errors.New("profile outbox repository not configured")
+	}
+	if err := s.profileOutboxRepo.Enqueue(userID); err != nil {
+		log.Printf("EnqueueProfileSync enqueue error for user %d: %v", userID, err)
+		return err
+	}
+	return nil
 }
 
 func parseVerificationToken(tokenString string, secret []byte) (jwt.MapClaims, error) {

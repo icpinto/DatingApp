@@ -34,13 +34,14 @@ func main() {
 
 	matchServiceURL := os.Getenv("MATCH_SERVICE_URL")
 
-	router := setupRouter(sqlDB, matchServiceURL)
+	matchService := services.NewMatchService(matchServiceURL)
+	router := setupRouter(sqlDB, matchService)
 
 	messagingURL := os.Getenv("MESSAGING_SERVICE_URL")
 	if messagingURL == "" {
 		messagingURL = "http://localhost:8082"
 	}
-	worker := services.NewOutboxWorker(sqlDB, messagingURL)
+	worker := services.NewOutboxWorker(sqlDB, messagingURL, matchService)
 	go worker.Start()
 
 	if err := router.Run(":8080"); err != nil {
@@ -48,7 +49,7 @@ func main() {
 	}
 }
 
-func setupRouter(sqlDB *sql.DB, matchServiceURL string) *gin.Engine {
+func setupRouter(sqlDB *sql.DB, matchService *services.MatchService) *gin.Engine {
 	docs.SwaggerInfo.BasePath = "/"
 
 	router := gin.Default()
@@ -70,7 +71,6 @@ func setupRouter(sqlDB *sql.DB, matchServiceURL string) *gin.Engine {
 	questionnaireService := services.NewQuestionnaireService(sqlDB)
 	friendRequestService := services.NewFriendRequestService(sqlDB)
 	profileService := services.NewProfileService(sqlDB)
-	matchService := services.NewMatchService(matchServiceURL)
 
 	router.Use(middlewares.ServiceMiddleware(middlewares.Services{
 		UserService:          userService,

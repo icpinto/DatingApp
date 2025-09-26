@@ -18,11 +18,11 @@ import (
 	"github.com/lib/pq"
 )
 
-func setupProfileRouter(db *sql.DB, withUser bool) *gin.Engine {
+func setupProfileRouter(db *sql.DB, matchService *services.MatchService, withUser bool) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
 	profileService := services.NewProfileService(db)
-	r.Use(middlewares.ServiceMiddleware(middlewares.Services{ProfileService: profileService}))
+	r.Use(middlewares.ServiceMiddleware(middlewares.Services{ProfileService: profileService, MatchService: matchService}))
 	if withUser {
 		r.Use(func(c *gin.Context) {
 			c.Set("username", "john")
@@ -90,8 +90,18 @@ func TestCreateProfileSuccess(t *testing.T) {
 	mock.ExpectExec("INSERT INTO profiles").
 		WithArgs(args...).
 		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectQuery("SELECT p.id, p.user_id").
+		WithArgs(1).
+		WillReturnRows(mockProfileRows())
 
-	router := setupProfileRouter(db, true)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"id":1,"userId":1}`))
+	}))
+	defer server.Close()
+
+	router := setupProfileRouter(db, services.NewMatchService(server.URL), true)
 
 	form := url.Values{}
 	form.Set("bio", "hello")
@@ -122,7 +132,14 @@ func TestGetProfileSuccess(t *testing.T) {
 		WithArgs(1).
 		WillReturnRows(mockProfileRows())
 
-	router := setupProfileRouter(db, true)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"id":1,"userId":1}`))
+	}))
+	defer server.Close()
+
+	router := setupProfileRouter(db, services.NewMatchService(server.URL), true)
 	req := httptest.NewRequest(http.MethodGet, "/profile", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -145,7 +162,14 @@ func TestGetProfilesSuccess(t *testing.T) {
 	mock.ExpectQuery("SELECT p.id, p.user_id").
 		WillReturnRows(mockProfileRows())
 
-	router := setupProfileRouter(db, false)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"id":1,"userId":1}`))
+	}))
+	defer server.Close()
+
+	router := setupProfileRouter(db, services.NewMatchService(server.URL), false)
 	req := httptest.NewRequest(http.MethodGet, "/profiles", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -169,7 +193,14 @@ func TestGetProfilesWithFilters(t *testing.T) {
 		WithArgs("female", 30, true).
 		WillReturnRows(mockProfileRows())
 
-	router := setupProfileRouter(db, false)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"id":1,"userId":1}`))
+	}))
+	defer server.Close()
+
+	router := setupProfileRouter(db, services.NewMatchService(server.URL), false)
 	req := httptest.NewRequest(http.MethodGet, "/profiles?gender=female&age=30&horoscope_available=true", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -189,7 +220,14 @@ func TestGetProfilesInvalidAgeFilter(t *testing.T) {
 	}
 	defer db.Close()
 
-	router := setupProfileRouter(db, false)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"id":1,"userId":1}`))
+	}))
+	defer server.Close()
+
+	router := setupProfileRouter(db, services.NewMatchService(server.URL), false)
 	req := httptest.NewRequest(http.MethodGet, "/profiles?age=notanumber", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -210,7 +248,14 @@ func TestGetUserProfileSuccess(t *testing.T) {
 		WithArgs(2).
 		WillReturnRows(mockProfileRows())
 
-	router := setupProfileRouter(db, false)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"id":1,"userId":1}`))
+	}))
+	defer server.Close()
+
+	router := setupProfileRouter(db, services.NewMatchService(server.URL), false)
 	req := httptest.NewRequest(http.MethodGet, "/profile/2", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)

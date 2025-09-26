@@ -15,3 +15,11 @@ type ConversationOutbox struct {
 	Processed      bool       `json:"processed"`
 	CreatedAt      time.Time  `json:"created_at"`
 }
+
+// ProfileSyncOutbox represents a pending profile synchronization event.
+type ProfileSyncOutbox struct {
+	EventID   string    `json:"event_id"`
+	UserID    int       `json:"user_id"`
+	Processed bool      `json:"processed"`
+	CreatedAt time.Time `json:"created_at"`
+}
