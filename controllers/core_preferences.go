@@ -82,3 +82,35 @@ func UpdateCorePreferences(ctx *gin.Context) {
 
 	utils.RespondSuccess(ctx, http.StatusOK, updated)
 }
+
+// GetCorePreferences godoc
+// @Summary      Get user core preferences
+// @Tags         Core Preferences
+// @Produce      json
+// @Success      200  {object}  models.CorePreferences
+// @Failure      401  {object}  utils.ErrorResponse
+// @Failure      404  {object}  utils.ErrorResponse
+// @Failure      500  {object}  utils.ErrorResponse
+// @Security     BearerAuth
+// @Router       /user/core-preferences [get]
+func GetCorePreferences(ctx *gin.Context) {
+	userID, exists := ctx.Get("userID")
+	if !exists {
+		utils.RespondError(ctx, http.StatusUnauthorized, nil, "GetCorePreferences unauthorized", "Unauthorized")
+		return
+	}
+
+	matchService := ctx.MustGet("matchService").(*services.MatchService)
+	prefs, err := matchService.GetCorePreferences(ctx.Request.Context(), userID.(int))
+	if err != nil {
+		if err.Error() == "core preferences not found" {
+			utils.RespondError(ctx, http.StatusNotFound, err, "GetCorePreferences not found", "Core preferences not found")
+			return
+		}
+
+		utils.RespondError(ctx, http.StatusInternalServerError, err, "GetCorePreferences service error", "Failed to fetch core preferences")
+		return
+	}
+
+	utils.RespondSuccess(ctx, http.StatusOK, prefs)
+}
