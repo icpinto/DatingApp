@@ -67,6 +67,37 @@ func (s *MatchService) UpdateCorePreferences(ctx context.Context, prefs models.C
 	return s.sendCorePreferences(ctx, http.MethodPut, prefs)
 }
 
+// GetCorePreferences retrieves the core preferences for the given user from the matching microservice.
+func (s *MatchService) GetCorePreferences(ctx context.Context, userID int) (models.CorePreferences, error) {
+	endpoint := fmt.Sprintf("%s/core-preferences/%d", s.baseURL, userID)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return models.CorePreferences{}, err
+	}
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return models.CorePreferences{}, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return models.CorePreferences{}, fmt.Errorf("core preferences not found")
+	}
+
+	if resp.StatusCode >= http.StatusBadRequest {
+		return models.CorePreferences{}, fmt.Errorf("match service returned status %d", resp.StatusCode)
+	}
+
+	var prefs models.CorePreferences
+	if err := json.NewDecoder(resp.Body).Decode(&prefs); err != nil {
+		return models.CorePreferences{}, err
+	}
+
+	return prefs, nil
+}
+
 func (s *MatchService) sendCorePreferences(ctx context.Context, method string, prefs models.CorePreferences) (models.CorePreferences, error) {
 	endpoint := fmt.Sprintf("%s/core-preferences", s.baseURL)
 
