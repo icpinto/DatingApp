@@ -31,53 +31,53 @@ type corePreferencesDTO struct {
 
 type profileDTO struct {
 	ID                   int      `json:"id"`
-	UserID               int      `json:"userId"`
+	UserID               int      `json:"user_id"`
 	Bio                  string   `json:"bio"`
 	Gender               string   `json:"gender"`
-	DateOfBirth          string   `json:"dateOfBirth"`
-	LocationLegacy       string   `json:"location"`
+	DateOfBirth          string   `json:"date_of_birth"`
+	LocationLegacy       string   `json:"location_legacy"`
 	Interests            []string `json:"interests"`
-	CivilStatus          string   `json:"civilStatus"`
+	CivilStatus          string   `json:"civil_status"`
 	Religion             string   `json:"religion"`
-	ReligionDetail       string   `json:"religionDetail"`
+	ReligionDetail       string   `json:"religion_detail"`
 	Caste                string   `json:"caste"`
-	HeightCM             int      `json:"heightCm"`
-	WeightKG             int      `json:"weightKg"`
-	DietaryPreference    string   `json:"dietaryPreference"`
+	HeightCM             int      `json:"height_cm"`
+	WeightKG             int      `json:"weight_kg"`
+	DietaryPreference    string   `json:"dietary_preference"`
 	Smoking              string   `json:"smoking"`
 	Alcohol              string   `json:"alcohol"`
 	Languages            []string `json:"languages"`
-	PhoneNumber          string   `json:"phoneNumber"`
-	ContactVerified      bool     `json:"contactVerified"`
-	IdentityVerified     bool     `json:"identityVerified"`
-	CountryCode          string   `json:"countryCode"`
+	PhoneNumber          string   `json:"phone_number"`
+	ContactVerified      bool     `json:"contact_verified"`
+	IdentityVerified     bool     `json:"identity_verified"`
+	CountryCode          string   `json:"country_code"`
 	Province             string   `json:"province"`
 	District             string   `json:"district"`
 	City                 string   `json:"city"`
-	PostalCode           string   `json:"postalCode"`
-	HighestEducation     string   `json:"highestEducation"`
-	FieldOfStudy         string   `json:"fieldOfStudy"`
+	PostalCode           string   `json:"postal_code"`
+	HighestEducation     string   `json:"highest_education"`
+	FieldOfStudy         string   `json:"field_of_study"`
 	Institution          string   `json:"institution"`
-	EmploymentStatus     string   `json:"employmentStatus"`
+	EmploymentStatus     string   `json:"employment_status"`
 	Occupation           string   `json:"occupation"`
-	FatherOccupation     string   `json:"fatherOccupation"`
-	MotherOccupation     string   `json:"motherOccupation"`
-	SiblingsCount        int      `json:"siblingsCount"`
+	FatherOccupation     string   `json:"father_occupation"`
+	MotherOccupation     string   `json:"mother_occupation"`
+	SiblingsCount        int      `json:"siblings_count"`
 	Siblings             string   `json:"siblings"`
-	HoroscopeAvailable   bool     `json:"horoscopeAvailable"`
-	BirthTime            string   `json:"birthTime"`
-	BirthPlace           string   `json:"birthPlace"`
-	SinhalaRaasi         string   `json:"sinhalaRaasi"`
+	HoroscopeAvailable   bool     `json:"horoscope_available"`
+	BirthTime            string   `json:"birth_time"`
+	BirthPlace           string   `json:"birth_place"`
+	SinhalaRaasi         string   `json:"sinhala_raasi"`
 	Nakshatra            string   `json:"nakshatra"`
 	Horoscope            string   `json:"horoscope"`
-	ProfileImageURL      string   `json:"profileImageUrl"`
-	ProfileImageThumbURL string   `json:"profileImageThumbUrl"`
+	ProfileImageURL      string   `json:"profile_image_url"`
+	ProfileImageThumbURL string   `json:"profile_image_thumb_url"`
 	Verified             bool     `json:"verified"`
-	ModerationStatus     string   `json:"moderationStatus"`
-	LastActiveAt         string   `json:"lastActiveAt"`
+	ModerationStatus     string   `json:"moderation_status"`
+	LastActiveAt         string   `json:"last_active_at"`
 	Metadata             string   `json:"metadata"`
-	CreatedAt            string   `json:"createdAt"`
-	UpdatedAt            string   `json:"updatedAt"`
+	CreatedAt            string   `json:"created_at"`
+	UpdatedAt            string   `json:"updated_at"`
 }
 
 func newCorePreferencesDTO(prefs models.CorePreferences) corePreferencesDTO {
