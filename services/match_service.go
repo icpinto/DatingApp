@@ -29,8 +29,7 @@ type corePreferencesDTO struct {
 	FoodPreference     string `json:"food_preference"`
 }
 
-type profileDTO struct {
-	ID                   int      `json:"id"`
+type profilePayload struct {
 	UserID               int      `json:"user_id"`
 	Bio                  string   `json:"bio"`
 	Gender               string   `json:"gender"`
@@ -80,6 +79,11 @@ type profileDTO struct {
 	UpdatedAt            string   `json:"updated_at"`
 }
 
+type profileDTO struct {
+	ID int `json:"id"`
+	profilePayload
+}
+
 func newCorePreferencesDTO(prefs models.CorePreferences) corePreferencesDTO {
 	return corePreferencesDTO{
 		UserID:             prefs.UserID,
@@ -118,9 +122,8 @@ func (d corePreferencesDTO) toModel() models.CorePreferences {
 	}
 }
 
-func newProfileDTO(profile models.Profile) profileDTO {
-	return profileDTO{
-		ID:                   profile.ID,
+func newProfilePayload(profile models.Profile) profilePayload {
+	return profilePayload{
 		UserID:               profile.UserID,
 		Bio:                  profile.Bio,
 		Gender:               profile.Gender,
@@ -172,55 +175,56 @@ func newProfileDTO(profile models.Profile) profileDTO {
 }
 
 func (d profileDTO) toModel() models.Profile {
+	payload := d.profilePayload
 	return models.Profile{
 		ID:                   d.ID,
-		UserID:               d.UserID,
-		Bio:                  d.Bio,
-		Gender:               d.Gender,
-		DateOfBirth:          d.DateOfBirth,
-		LocationLegacy:       d.LocationLegacy,
-		Interests:            d.Interests,
-		CivilStatus:          d.CivilStatus,
-		Religion:             d.Religion,
-		ReligionDetail:       d.ReligionDetail,
-		Caste:                d.Caste,
-		HeightCM:             d.HeightCM,
-		WeightKG:             d.WeightKG,
-		DietaryPreference:    d.DietaryPreference,
-		Smoking:              d.Smoking,
-		Alcohol:              d.Alcohol,
-		Languages:            d.Languages,
-		PhoneNumber:          d.PhoneNumber,
-		ContactVerified:      d.ContactVerified,
-		IdentityVerified:     d.IdentityVerified,
-		CountryCode:          d.CountryCode,
-		Province:             d.Province,
-		District:             d.District,
-		City:                 d.City,
-		PostalCode:           d.PostalCode,
-		HighestEducation:     d.HighestEducation,
-		FieldOfStudy:         d.FieldOfStudy,
-		Institution:          d.Institution,
-		EmploymentStatus:     d.EmploymentStatus,
-		Occupation:           d.Occupation,
-		FatherOccupation:     d.FatherOccupation,
-		MotherOccupation:     d.MotherOccupation,
-		SiblingsCount:        d.SiblingsCount,
-		Siblings:             d.Siblings,
-		HoroscopeAvailable:   d.HoroscopeAvailable,
-		BirthTime:            d.BirthTime,
-		BirthPlace:           d.BirthPlace,
-		SinhalaRaasi:         d.SinhalaRaasi,
-		Nakshatra:            d.Nakshatra,
-		Horoscope:            d.Horoscope,
-		ProfileImageURL:      d.ProfileImageURL,
-		ProfileImageThumbURL: d.ProfileImageThumbURL,
-		Verified:             d.Verified,
-		ModerationStatus:     d.ModerationStatus,
-		LastActiveAt:         d.LastActiveAt,
-		Metadata:             d.Metadata,
-		CreatedAt:            d.CreatedAt,
-		UpdatedAt:            d.UpdatedAt,
+		UserID:               payload.UserID,
+		Bio:                  payload.Bio,
+		Gender:               payload.Gender,
+		DateOfBirth:          payload.DateOfBirth,
+		LocationLegacy:       payload.LocationLegacy,
+		Interests:            payload.Interests,
+		CivilStatus:          payload.CivilStatus,
+		Religion:             payload.Religion,
+		ReligionDetail:       payload.ReligionDetail,
+		Caste:                payload.Caste,
+		HeightCM:             payload.HeightCM,
+		WeightKG:             payload.WeightKG,
+		DietaryPreference:    payload.DietaryPreference,
+		Smoking:              payload.Smoking,
+		Alcohol:              payload.Alcohol,
+		Languages:            payload.Languages,
+		PhoneNumber:          payload.PhoneNumber,
+		ContactVerified:      payload.ContactVerified,
+		IdentityVerified:     payload.IdentityVerified,
+		CountryCode:          payload.CountryCode,
+		Province:             payload.Province,
+		District:             payload.District,
+		City:                 payload.City,
+		PostalCode:           payload.PostalCode,
+		HighestEducation:     payload.HighestEducation,
+		FieldOfStudy:         payload.FieldOfStudy,
+		Institution:          payload.Institution,
+		EmploymentStatus:     payload.EmploymentStatus,
+		Occupation:           payload.Occupation,
+		FatherOccupation:     payload.FatherOccupation,
+		MotherOccupation:     payload.MotherOccupation,
+		SiblingsCount:        payload.SiblingsCount,
+		Siblings:             payload.Siblings,
+		HoroscopeAvailable:   payload.HoroscopeAvailable,
+		BirthTime:            payload.BirthTime,
+		BirthPlace:           payload.BirthPlace,
+		SinhalaRaasi:         payload.SinhalaRaasi,
+		Nakshatra:            payload.Nakshatra,
+		Horoscope:            payload.Horoscope,
+		ProfileImageURL:      payload.ProfileImageURL,
+		ProfileImageThumbURL: payload.ProfileImageThumbURL,
+		Verified:             payload.Verified,
+		ModerationStatus:     payload.ModerationStatus,
+		LastActiveAt:         payload.LastActiveAt,
+		Metadata:             payload.Metadata,
+		CreatedAt:            payload.CreatedAt,
+		UpdatedAt:            payload.UpdatedAt,
 	}
 }
 
@@ -350,7 +354,7 @@ func (s *MatchService) UpsertProfile(ctx context.Context, profile models.Profile
 		method = http.MethodPut
 	}
 
-	payload, err := json.Marshal(newProfileDTO(profile))
+	payload, err := json.Marshal(newProfilePayload(profile))
 	if err != nil {
 		return models.Profile{}, err
 	}

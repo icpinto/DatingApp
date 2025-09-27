@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"database/sql"
 	"database/sql/driver"
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -94,7 +97,22 @@ func TestCreateProfileSuccess(t *testing.T) {
 		WithArgs(1).
 		WillReturnRows(mockProfileRows())
 
+	payloadCh := make(chan map[string]any, 1)
+	errCh := make(chan error, 1)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			errCh <- fmt.Errorf("failed to read request body: %w", err)
+			http.Error(w, "bad request", http.StatusInternalServerError)
+			return
+		}
+		var payload map[string]any
+		if err := json.Unmarshal(body, &payload); err != nil {
+			errCh <- fmt.Errorf("failed to unmarshal match payload: %w", err)
+			http.Error(w, "bad request", http.StatusInternalServerError)
+			return
+		}
+		payloadCh <- payload
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"id":1,"userId":1}`))
@@ -112,6 +130,24 @@ func TestCreateProfileSuccess(t *testing.T) {
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected status 200 got %d: %s", w.Code, w.Body.String())
+	}
+
+	select {
+	case err := <-errCh:
+		t.Fatalf("match service request error: %v", err)
+	default:
+	}
+
+	select {
+	case payload := <-payloadCh:
+		if _, found := payload["id"]; found {
+			t.Fatalf("expected match payload to omit id field, got: %v", payload)
+		}
+		if userID, found := payload["user_id"]; !found || userID != float64(1) {
+			t.Fatalf("expected user_id 1 in match payload, got: %v", payload["user_id"])
+		}
+	case <-time.After(time.Second):
+		t.Fatalf("timed out waiting for match service payload")
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("unmet db expectations: %v", err)
