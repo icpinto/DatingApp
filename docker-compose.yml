@@ -1,0 +1,23 @@
+services:
+  dating-app:
+    build: .
+    image: dating-app:latest
+    container_name: dating-app
+    environment:
+      - DATABASE_URL=
+      - MATCH_SERVICE_URL=
+      - MESSAGING_SERVICE_URL=
+    ports:
+      - "8080:8080"
+    networks:
+      - dating-shared-net
+    volumes:
+      - uploads-data:/app/uploads
+    restart: unless-stopped
+
+volumes:
+  uploads-data:
+
+networks:
+  dating-shared-net:
+    external: true
