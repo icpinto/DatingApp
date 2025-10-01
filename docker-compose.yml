@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_USER: datinguser
       POSTGRES_PASSWORD: yourpassword
-      POSTGRES_DB: datingapp
+      POSTGRES_DB: datingdb
     ports:
       - "5440:5432"
     volumes:
@@ -25,7 +25,7 @@ services:
     image: dating-app:latest
     container_name: dating-app
     environment:
-      - DATABASE_URL=postgres://datinguser:yourpassword@postgres:5432/datingapp?sslmode=disable
+      - DATABASE_URL=postgres://datinguser:yourpassword@postgres:5432/datingdb?sslmode=disable
       - MATCH_SERVICE_URL=
       - MESSAGING_SERVICE_URL=
     ports:
