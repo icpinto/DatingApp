@@ -1,10 +1,31 @@
 services:
+  postgres:
+    image: postgres:15
+    container_name: dating-postgres
+    environment:
+      POSTGRES_USER: datinguser
+      POSTGRES_PASSWORD: yourpassword
+      POSTGRES_DB: datingapp
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./deployments/postgres/000_apply_migrations.sh:/docker-entrypoint-initdb.d/000_apply_migrations.sh:ro
+      - ./internals/db/migrations:/migrations:ro
+    networks:
+      - dating-shared-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   dating-app:
     build: .
     image: dating-app:latest
     container_name: dating-app
     environment:
-      - DATABASE_URL=
+      - DATABASE_URL=postgres://datinguser:yourpassword@postgres:5432/datingapp?sslmode=disable
       - MATCH_SERVICE_URL=
       - MESSAGING_SERVICE_URL=
     ports:
@@ -13,10 +34,14 @@ services:
       - dating-shared-net
     volumes:
       - uploads-data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:
   uploads-data:
+  postgres-data:
 
 networks:
   dating-shared-net:

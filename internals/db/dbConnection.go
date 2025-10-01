@@ -14,7 +14,7 @@ func InitDB() (*sql.DB, error) {
 
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
-		dsn = "host=127.0.0.1 port=5432 user=datinguser password=yourpassword dbname=datingapp sslmode=disable"
+		dsn = "postgres://datinguser:yourpassword@postgres:5432/datingapp?sslmode=disable"
 	}
 
 	db, err := sql.Open("postgres", dsn)
