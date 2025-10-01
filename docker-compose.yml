@@ -20,6 +20,26 @@ services:
       timeout: 5s
       retries: 5
 
+  postgres-bootstrap:
+    image: postgres:15
+    container_name: dating-postgres-bootstrap
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: datinguser
+      POSTGRES_PASSWORD: yourpassword
+      POSTGRES_DB: datingdb
+    entrypoint: ["/bin/bash", "/scripts/ensure_db_and_schema.sh"]
+    networks:
+      - dating-shared-net
+    volumes:
+      - ./deployments/postgres/ensure_db_and_schema.sh:/scripts/ensure_db_and_schema.sh:ro
+      - ./internals/db/migrations:/migrations:ro
+    restart: "no"
+
   dating-app:
     build: .
     image: dating-app:latest
@@ -37,6 +57,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      postgres-bootstrap:
+        condition: service_completed_successfully
     restart: unless-stopped
 
 volumes:
