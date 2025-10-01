@@ -13,8 +13,8 @@ var DB *sql.DB
 func InitDB() (*sql.DB, error) {
 
 	dsn := os.Getenv("DATABASE_URL")
-	if dsn == "" {
-		dsn = "postgres://datinguser:yourpassword@postgres:5432/datingapp?sslmode=disable"
+        if dsn == "" {
+                dsn = "postgres://datinguser:yourpassword@postgres:5432/datingdb?sslmode=disable"
 	}
 
 	db, err := sql.Open("postgres", dsn)
