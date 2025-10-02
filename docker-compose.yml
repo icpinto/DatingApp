@@ -63,7 +63,7 @@ services:
     container_name: dating-app
     environment:
       - DATABASE_URL=postgres://datinguser:yourpassword@postgres:5432/datingdb?sslmode=disable
-      - MATCH_SERVICE_URL=
+      - MATCH_SERVICE_URL=http://match-api:8003
       - MESSAGING_SERVICE_URL=
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
     ports:
