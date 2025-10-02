@@ -123,22 +123,32 @@ func (s *FriendRequestService) GetPendingRequests(username string) ([]models.Fri
 		return nil, err
 	}
 
-	for i := range requests {
-		sender, err := repositories.GetUsernameByID(s.db, requests[i].SenderID)
+	filtered := make([]models.FriendRequest, 0, len(requests))
+	for _, request := range requests {
+		sender, err := repositories.GetUsernameByID(s.db, request.SenderID)
 		if err != nil {
-			log.Printf("GetPendingRequests sender lookup error for user %d: %v", requests[i].SenderID, err)
+			if errors.Is(err, repositories.ErrUserNotFound) {
+				log.Printf("GetPendingRequests skipping request %d due to inactive sender %d", request.RequestId, request.SenderID)
+				continue
+			}
+			log.Printf("GetPendingRequests sender lookup error for user %d: %v", request.SenderID, err)
 			return nil, err
 		}
-		receiver, err := repositories.GetUsernameByID(s.db, requests[i].ReceiverID)
+		receiver, err := repositories.GetUsernameByID(s.db, request.ReceiverID)
 		if err != nil {
-			log.Printf("GetPendingRequests receiver lookup error for user %d: %v", requests[i].ReceiverID, err)
+			if errors.Is(err, repositories.ErrUserNotFound) {
+				log.Printf("GetPendingRequests skipping request %d due to inactive receiver %d", request.RequestId, request.ReceiverID)
+				continue
+			}
+			log.Printf("GetPendingRequests receiver lookup error for user %d: %v", request.ReceiverID, err)
 			return nil, err
 		}
-		requests[i].SenderUsername = sender
-		requests[i].ReceiverUsername = receiver
+		request.SenderUsername = sender
+		request.ReceiverUsername = receiver
+		filtered = append(filtered, request)
 	}
 
-	return requests, nil
+	return filtered, nil
 }
 
 // GetSentRequests retrieves all friend requests sent by a user.
@@ -154,22 +164,32 @@ func (s *FriendRequestService) GetSentRequests(username string) ([]models.Friend
 		return nil, err
 	}
 
-	for i := range requests {
-		sender, err := repositories.GetUsernameByID(s.db, requests[i].SenderID)
+	filtered := make([]models.FriendRequest, 0, len(requests))
+	for _, request := range requests {
+		sender, err := repositories.GetUsernameByID(s.db, request.SenderID)
 		if err != nil {
-			log.Printf("GetSentRequests sender lookup error for user %d: %v", requests[i].SenderID, err)
+			if errors.Is(err, repositories.ErrUserNotFound) {
+				log.Printf("GetSentRequests skipping request %d due to inactive sender %d", request.RequestId, request.SenderID)
+				continue
+			}
+			log.Printf("GetSentRequests sender lookup error for user %d: %v", request.SenderID, err)
 			return nil, err
 		}
-		receiver, err := repositories.GetUsernameByID(s.db, requests[i].ReceiverID)
+		receiver, err := repositories.GetUsernameByID(s.db, request.ReceiverID)
 		if err != nil {
-			log.Printf("GetSentRequests receiver lookup error for user %d: %v", requests[i].ReceiverID, err)
+			if errors.Is(err, repositories.ErrUserNotFound) {
+				log.Printf("GetSentRequests skipping request %d due to inactive receiver %d", request.RequestId, request.ReceiverID)
+				continue
+			}
+			log.Printf("GetSentRequests receiver lookup error for user %d: %v", request.ReceiverID, err)
 			return nil, err
 		}
-		requests[i].SenderUsername = sender
-		requests[i].ReceiverUsername = receiver
+		request.SenderUsername = sender
+		request.ReceiverUsername = receiver
+		filtered = append(filtered, request)
 	}
 
-	return requests, nil
+	return filtered, nil
 }
 
 // CheckRequestStatus checks if a friend request exists between sender and receiver.
