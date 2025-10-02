@@ -68,13 +68,11 @@ func setupRouter(sqlDB *sql.DB, matchService *services.MatchService) *gin.Engine
 	}))
 
 	userService := services.NewUserService(sqlDB)
-	questionnaireService := services.NewQuestionnaireService(sqlDB)
 	friendRequestService := services.NewFriendRequestService(sqlDB)
 	profileService := services.NewProfileService(sqlDB)
 
 	router.Use(middlewares.ServiceMiddleware(middlewares.Services{
 		UserService:          userService,
-		QuestionnaireService: questionnaireService,
 		FriendRequestService: friendRequestService,
 		ProfileService:       profileService,
 		MatchService:         matchService,
@@ -107,10 +105,6 @@ func setupRouter(sqlDB *sql.DB, matchService *services.MatchService) *gin.Engine
 	protected.GET("/requests", controllers.GetPendingRequests)
 	protected.GET("/sentRequests", controllers.GetSentRequests)
 	protected.GET("/checkReqStatus/:reciver_id", controllers.CheckReqStatus)
-
-	protected.GET("/questionnaire", controllers.GetQuestionnaire)
-	protected.POST("/submitQuestionnaire", controllers.SubmitQuestionnaire)
-	protected.GET("/questionnaireAnswers", controllers.GetUserAnswers)
 
 	return router
 }

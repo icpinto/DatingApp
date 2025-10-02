@@ -51,16 +51,6 @@ type FriendRequestsResponse struct {
 	Requests []models.FriendRequest `json:"requests"`
 }
 
-// QuestionnaireResponse wraps questionnaire questions.
-type QuestionnaireResponse struct {
-	Questions []models.Question `json:"questions"`
-}
-
-// AnswersResponse wraps questionnaire answers for a user.
-type AnswersResponse struct {
-	Answers []models.Answer `json:"answers"`
-}
-
 // FriendRequestStatusResponse represents the friend request status between two users.
 type FriendRequestStatusResponse struct {
 	RequestStatus bool `json:"requestStatus"`
