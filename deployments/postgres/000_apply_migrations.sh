@@ -3,6 +3,11 @@ set -euo pipefail
 
 MIGRATIONS_DIR=${MIGRATIONS_DIR:-/migrations}
 
+if [[ ! -d "$MIGRATIONS_DIR" ]]; then
+        echo "Migrations directory $MIGRATIONS_DIR not found" >&2
+        exit 1
+fi
+
 run_sql() {
         local file="$1"
         if [[ ! -f "$file" ]];
@@ -18,13 +23,18 @@ run_sql() {
                 -f "$file"
 }
 
-run_sql "$MIGRATIONS_DIR/init_schema.sql"
-run_sql "$MIGRATIONS_DIR/add_username_columns.sql"
-run_sql "$MIGRATIONS_DIR/add_description_to_friend_requests.sql"
-run_sql "$MIGRATIONS_DIR/add_profile_image_column.sql"
-run_sql "$MIGRATIONS_DIR/add_profile_verification_columns.sql"
-run_sql "$MIGRATIONS_DIR/add_profile_sync_outbox_table.sql"
-run_sql "$MIGRATIONS_DIR/update_profiles_schema.sql"
-run_sql "$MIGRATIONS_DIR/update_conversation_id_uuid.sql"
+shopt -s nullglob
+readarray -t migrations < <(find "$MIGRATIONS_DIR" -maxdepth 1 -type f -name '*.sql' -print | sort)
+
+if [[ ${#migrations[@]} -eq 0 ]]; then
+        echo "No migration files found in $MIGRATIONS_DIR" >&2
+        exit 1
+fi
+
+for migration in "${migrations[@]}"; do
+        run_sql "$migration"
+done
+
+shopt -u nullglob
 
 echo "All migrations applied successfully."

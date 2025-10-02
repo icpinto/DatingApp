@@ -150,6 +150,37 @@ const docTemplate = `{
                 }
             }
         },
+        "/signout": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Invalidate client-side session by acknowledging the logout request.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Sign out a user",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.MessageResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/user/acceptRequest": {
             "post": {
                 "security": [
@@ -228,6 +259,156 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/utils.FriendRequestStatusResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/core-preferences": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Core Preferences"
+                ],
+                "summary": "Get user core preferences",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.CorePreferences"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Core Preferences"
+                ],
+                "summary": "Update user core preferences",
+                "parameters": [
+                    {
+                        "description": "Core preferences payload",
+                        "name": "preferences",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CorePreferences"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.CorePreferences"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Core Preferences"
+                ],
+                "summary": "Save user core preferences",
+                "parameters": [
+                    {
+                        "description": "Core preferences payload",
+                        "name": "preferences",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CorePreferences"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.CorePreferences"
                         }
                     },
                     "400": {
@@ -648,72 +829,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/user/questionnaire": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Questionnaire"
-                ],
-                "summary": "Retrieve matchmaking questionnaire",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/utils.QuestionnaireResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/utils.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/user/questionnaireAnswers": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Questionnaire"
-                ],
-                "summary": "Retrieve questionnaire answers for the authenticated user",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/utils.AnswersResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/utils.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/utils.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/user/rejectRequest": {
             "post": {
                 "security": [
@@ -898,62 +1013,6 @@ const docTemplate = `{
                     }
                 }
             }
-        },
-        "/user/submitQuestionnaire": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Questionnaire"
-                ],
-                "summary": "Submit questionnaire answers",
-                "parameters": [
-                    {
-                        "description": "Questionnaire answer",
-                        "name": "answer",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Answer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/utils.MessageResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/utils.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/utils.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/utils.ErrorResponse"
-                        }
-                    }
-                }
-            }
         }
     },
     "definitions": {
@@ -965,16 +1024,49 @@ const docTemplate = `{
                 }
             }
         },
-        "models.Answer": {
+        "models.CorePreferences": {
             "type": "object",
             "properties": {
-                "answer_text": {
+                "civil_status": {
                     "type": "string"
                 },
-                "answer_value": {
+                "country_of_residence": {
+                    "type": "string"
+                },
+                "drinking_habit": {
+                    "type": "string"
+                },
+                "education_level": {
+                    "type": "string"
+                },
+                "food_preference": {
+                    "type": "string"
+                },
+                "gender": {
+                    "type": "string"
+                },
+                "max_age": {
                     "type": "integer"
                 },
-                "question_id": {
+                "max_height": {
+                    "type": "integer"
+                },
+                "min_age": {
+                    "type": "integer"
+                },
+                "min_height": {
+                    "type": "integer"
+                },
+                "occupation_status": {
+                    "type": "string"
+                },
+                "religion": {
+                    "type": "string"
+                },
+                "smoking_habit": {
+                    "type": "string"
+                },
+                "user_id": {
                     "type": "integer"
                 }
             }
@@ -983,6 +1075,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "created_at": {
+                    "type": "string"
+                },
+                "description": {
                     "type": "string"
                 },
                 "id": {
@@ -1001,9 +1096,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
-                    "type": "string"
-                },
-                "description": {
                     "type": "string"
                 },
                 "updated_at": {
@@ -1034,6 +1126,9 @@ const docTemplate = `{
                 },
                 "civil_status": {
                     "type": "string"
+                },
+                "contact_verified": {
+                    "type": "boolean"
                 },
                 "country_code": {
                     "type": "string"
@@ -1077,6 +1172,9 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "identity_verified": {
+                    "type": "boolean"
+                },
                 "institution": {
                     "type": "string"
                 },
@@ -1092,15 +1190,6 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
-                },
-                "phone_number": {
-                    "type": "string"
-                },
-                "contact_verified": {
-                    "type": "boolean"
-                },
-                "identity_verified": {
-                    "type": "boolean"
                 },
                 "last_active_at": {
                     "type": "string"
@@ -1121,6 +1210,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "occupation": {
+                    "type": "string"
+                },
+                "phone_number": {
                     "type": "string"
                 },
                 "postal_code": {
@@ -1212,26 +1304,6 @@ const docTemplate = `{
                 }
             }
         },
-        "models.Question": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "options": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "questionText": {
-                    "type": "string"
-                },
-                "questionType": {
-                    "type": "string"
-                }
-            }
-        },
         "models.RejectRequest": {
             "type": "object",
             "properties": {
@@ -1281,6 +1353,9 @@ const docTemplate = `{
                 "civil_status": {
                     "type": "string"
                 },
+                "contact_verified": {
+                    "type": "boolean"
+                },
                 "country_code": {
                     "type": "string"
                 },
@@ -1323,6 +1398,9 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "identity_verified": {
+                    "type": "boolean"
+                },
                 "institution": {
                     "type": "string"
                 },
@@ -1338,15 +1416,6 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
-                },
-                "phone_number": {
-                    "type": "string"
-                },
-                "contact_verified": {
-                    "type": "boolean"
-                },
-                "identity_verified": {
-                    "type": "boolean"
                 },
                 "last_active_at": {
                     "type": "string"
@@ -1367,6 +1436,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "occupation": {
+                    "type": "string"
+                },
+                "phone_number": {
                     "type": "string"
                 },
                 "postal_code": {
@@ -1417,17 +1489,6 @@ const docTemplate = `{
                 }
             }
         },
-        "utils.AnswersResponse": {
-            "type": "object",
-            "properties": {
-                "answers": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.Answer"
-                    }
-                }
-            }
-        },
         "utils.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -1463,17 +1524,6 @@ const docTemplate = `{
             "properties": {
                 "message": {
                     "type": "string"
-                }
-            }
-        },
-        "utils.QuestionnaireResponse": {
-            "type": "object",
-            "properties": {
-                "questions": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.Question"
-                    }
                 }
             }
         },

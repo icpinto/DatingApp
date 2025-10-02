@@ -5,18 +5,42 @@ definitions:
       id:
         type: integer
     type: object
-  models.Answer:
+  models.CorePreferences:
     properties:
-      answer_text:
+      civil_status:
         type: string
-      answer_value:
+      country_of_residence:
+        type: string
+      drinking_habit:
+        type: string
+      education_level:
+        type: string
+      food_preference:
+        type: string
+      gender:
+        type: string
+      max_age:
         type: integer
-      question_id:
+      max_height:
+        type: integer
+      min_age:
+        type: integer
+      min_height:
+        type: integer
+      occupation_status:
+        type: string
+      religion:
+        type: string
+      smoking_habit:
+        type: string
+      user_id:
         type: integer
     type: object
   models.FriendRequest:
     properties:
       created_at:
+        type: string
+      description:
         type: string
       id:
         type: integer
@@ -29,8 +53,6 @@ definitions:
       sender_username:
         type: string
       status:
-        type: string
-      description:
         type: string
       updated_at:
         type: string
@@ -51,6 +73,8 @@ definitions:
         type: string
       civil_status:
         type: string
+      contact_verified:
+        type: boolean
       country_code:
         type: string
       created_at:
@@ -79,6 +103,8 @@ definitions:
         type: boolean
       id:
         type: integer
+      identity_verified:
+        type: boolean
       institution:
         type: string
       interests:
@@ -90,12 +116,6 @@ definitions:
         items:
           type: string
         type: array
-      phone_number:
-        type: string
-      contact_verified:
-        type: boolean
-      identity_verified:
-        type: boolean
       last_active_at:
         type: string
       location:
@@ -109,6 +129,8 @@ definitions:
       nakshatra:
         type: string
       occupation:
+        type: string
+      phone_number:
         type: string
       postal_code:
         type: string
@@ -169,19 +191,6 @@ definitions:
           type: string
         type: array
     type: object
-  models.Question:
-    properties:
-      id:
-        type: integer
-      options:
-        items:
-          type: string
-        type: array
-      questionText:
-        type: string
-      questionType:
-        type: string
-    type: object
   models.RejectRequest:
     properties:
       id:
@@ -214,6 +223,8 @@ definitions:
         type: string
       civil_status:
         type: string
+      contact_verified:
+        type: boolean
       country_code:
         type: string
       created_at:
@@ -242,6 +253,8 @@ definitions:
         type: boolean
       id:
         type: integer
+      identity_verified:
+        type: boolean
       institution:
         type: string
       interests:
@@ -266,6 +279,8 @@ definitions:
       nakshatra:
         type: string
       occupation:
+        type: string
+      phone_number:
         type: string
       postal_code:
         type: string
@@ -299,13 +314,6 @@ definitions:
       weight_kg:
         type: integer
     type: object
-  utils.AnswersResponse:
-    properties:
-      answers:
-        items:
-          $ref: '#/definitions/models.Answer'
-        type: array
-    type: object
   utils.ErrorResponse:
     properties:
       details:
@@ -329,13 +337,6 @@ definitions:
     properties:
       message:
         type: string
-    type: object
-  utils.QuestionnaireResponse:
-    properties:
-      questions:
-        items:
-          $ref: '#/definitions/models.Question'
-        type: array
     type: object
   utils.TokenResponse:
     properties:
@@ -438,6 +439,25 @@ paths:
       summary: Register a new user
       tags:
       - Auth
+  /signout:
+    post:
+      description: Invalidate client-side session by acknowledging the logout request.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.MessageResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Sign out a user
+      tags:
+      - Auth
   /user/acceptRequest:
     post:
       consumes:
@@ -501,6 +521,100 @@ paths:
       summary: Check the friend request status with another user
       tags:
       - Friend Requests
+  /user/core-preferences:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.CorePreferences'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user core preferences
+      tags:
+      - Core Preferences
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Core preferences payload
+        in: body
+        name: preferences
+        required: true
+        schema:
+          $ref: '#/definitions/models.CorePreferences'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.CorePreferences'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Save user core preferences
+      tags:
+      - Core Preferences
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Core preferences payload
+        in: body
+        name: preferences
+        required: true
+        schema:
+          $ref: '#/definitions/models.CorePreferences'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.CorePreferences'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user core preferences
+      tags:
+      - Core Preferences
   /user/matches/{user_id}:
     get:
       description: Combines compatibility scores from the matching service with profile
@@ -758,46 +872,6 @@ paths:
       summary: List user profiles with optional filters
       tags:
       - Profiles
-  /user/questionnaire:
-    get:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/utils.QuestionnaireResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/utils.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Retrieve matchmaking questionnaire
-      tags:
-      - Questionnaire
-  /user/questionnaireAnswers:
-    get:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/utils.AnswersResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/utils.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/utils.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Retrieve questionnaire answers for the authenticated user
-      tags:
-      - Questionnaire
   /user/rejectRequest:
     post:
       consumes:
@@ -913,41 +987,6 @@ paths:
       summary: List sent friend requests
       tags:
       - Friend Requests
-  /user/submitQuestionnaire:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Questionnaire answer
-        in: body
-        name: answer
-        required: true
-        schema:
-          $ref: '#/definitions/models.Answer'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/utils.MessageResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/utils.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/utils.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/utils.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Submit questionnaire answers
-      tags:
-      - Questionnaire
 securityDefinitions:
   BearerAuth:
     in: header

@@ -8,6 +8,11 @@ set -euo pipefail
 : "${POSTGRES_DB:?POSTGRES_DB must be set}"
 MIGRATIONS_DIR=${MIGRATIONS_DIR:-/migrations}
 
+if [[ ! -d "$MIGRATIONS_DIR" ]]; then
+  log "Migrations directory $MIGRATIONS_DIR not found" >&2
+  exit 1
+fi
+
 export PGPASSWORD="$POSTGRES_PASSWORD"
 
 log() {
@@ -60,14 +65,19 @@ apply_migrations_if_needed() {
   fi
 
   log "Applying baseline migrations to '$POSTGRES_DB'"
-  run_sql "$MIGRATIONS_DIR/init_schema.sql"
-  run_sql "$MIGRATIONS_DIR/add_username_columns.sql"
-  run_sql "$MIGRATIONS_DIR/add_description_to_friend_requests.sql"
-  run_sql "$MIGRATIONS_DIR/add_profile_image_column.sql"
-  run_sql "$MIGRATIONS_DIR/add_profile_verification_columns.sql"
-  run_sql "$MIGRATIONS_DIR/add_profile_sync_outbox_table.sql"
-  run_sql "$MIGRATIONS_DIR/update_profiles_schema.sql"
-  run_sql "$MIGRATIONS_DIR/update_conversation_id_uuid.sql"
+  shopt -s nullglob
+  readarray -t migrations < <(find "$MIGRATIONS_DIR" -maxdepth 1 -type f -name '*.sql' -print | sort)
+
+  if [[ ${#migrations[@]} -eq 0 ]]; then
+    log "No migration files found in $MIGRATIONS_DIR" >&2
+    exit 1
+  fi
+
+  for migration in "${migrations[@]}"; do
+    run_sql "$migration"
+  done
+
+  shopt -u nullglob
   log "Migrations applied successfully"
 }
 
