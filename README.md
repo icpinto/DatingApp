@@ -65,6 +65,14 @@ docker network create dating-shared-net  # run once if the network does not yet 
 docker compose up --build
 ```
 
+> **Note:** When running the [match service](https://github.com/icpinto/match_service)
+> via its own Compose stack, connect it to the shared `dating-shared-net`
+> network as well. The backend container now points `MATCH_SERVICE_URL` at
+> `http://match-api:8003`, which is the hostname exposed by the match service
+> container on that network. This avoids `localhost` lookups from inside the
+> dating app container, which previously caused connection-refused errors when
+> synchronizing profiles.
+
 ## Environment Variables
 
 The application reads its configuration from environment variables. The `.env` file in the
