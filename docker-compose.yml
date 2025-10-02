@@ -40,6 +40,23 @@ services:
       - ./internals/db/migrations:/migrations:ro
     restart: "no"
 
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: dating-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - dating-shared-net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   dating-app:
     build: .
     image: dating-app:latest
@@ -48,6 +65,7 @@ services:
       - DATABASE_URL=postgres://datinguser:yourpassword@postgres:5432/datingdb?sslmode=disable
       - MATCH_SERVICE_URL=
       - MESSAGING_SERVICE_URL=
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
     ports:
       - "8080:8080"
     networks:
@@ -59,6 +77,8 @@ services:
         condition: service_healthy
       postgres-bootstrap:
         condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

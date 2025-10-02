@@ -75,6 +75,7 @@ project root documents the supported variables:
 | `DATABASE_URL` | PostgreSQL connection string used by the application. |
 | `MATCH_SERVICE_URL` | Base URL of the external match service. |
 | `MESSAGING_SERVICE_URL` | Base URL of the messaging/outbox relay service. |
+| `RABBITMQ_URL` | AMQP connection string for publishing lifecycle events. |
 | `CONTACT_VERIFICATION_JWT_SECRET` | Secret for verifying contact verification tokens. |
 | `IDENTITY_VERIFICATION_JWT_SECRET` | Secret for verifying identity verification tokens. |
 | `VERIFICATION_JWT_SECRET` | Optional fallback secret for verification tokens. |

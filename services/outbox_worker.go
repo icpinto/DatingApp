@@ -18,27 +18,31 @@ import (
 
 // OutboxWorker processes conversation outbox events.
 type OutboxWorker struct {
-	db                *sql.DB
-	outboxRepo        *repositories.OutboxRepository
-	profileOutboxRepo *repositories.ProfileSyncOutboxRepository
-	profileRepo       *repositories.ProfileRepository
-	frRepo            *repositories.FriendRequestRepository
-	client            *http.Client
-	baseURL           string
-	matchService      *MatchService
+	db                  *sql.DB
+	outboxRepo          *repositories.OutboxRepository
+	profileOutboxRepo   *repositories.ProfileSyncOutboxRepository
+	profileRepo         *repositories.ProfileRepository
+	frRepo              *repositories.FriendRequestRepository
+	client              *http.Client
+	baseURL             string
+	matchService        *MatchService
+	lifecycleOutboxRepo *repositories.UserLifecycleOutboxRepository
+	lifecyclePublisher  *RabbitMQPublisher
 }
 
 // NewOutboxWorker creates a new OutboxWorker.
-func NewOutboxWorker(db *sql.DB, baseURL string, matchService *MatchService) *OutboxWorker {
+func NewOutboxWorker(db *sql.DB, baseURL string, matchService *MatchService, lifecyclePublisher *RabbitMQPublisher) *OutboxWorker {
 	return &OutboxWorker{
-		db:                db,
-		outboxRepo:        repositories.NewOutboxRepository(db),
-		profileOutboxRepo: repositories.NewProfileSyncOutboxRepository(db),
-		profileRepo:       repositories.NewProfileRepository(db),
-		frRepo:            repositories.NewFriendRequestRepository(db),
-		client:            &http.Client{Timeout: 5 * time.Second},
-		baseURL:           baseURL,
-		matchService:      matchService,
+		db:                  db,
+		outboxRepo:          repositories.NewOutboxRepository(db),
+		profileOutboxRepo:   repositories.NewProfileSyncOutboxRepository(db),
+		profileRepo:         repositories.NewProfileRepository(db),
+		frRepo:              repositories.NewFriendRequestRepository(db),
+		client:              &http.Client{Timeout: 5 * time.Second},
+		baseURL:             baseURL,
+		matchService:        matchService,
+		lifecycleOutboxRepo: repositories.NewUserLifecycleOutboxRepository(db),
+		lifecyclePublisher:  lifecyclePublisher,
 	}
 }
 
@@ -57,6 +61,9 @@ func (w *OutboxWorker) process() error {
 		return err
 	}
 	if err := w.processProfileSyncEvents(); err != nil {
+		return err
+	}
+	if err := w.processUserLifecycleEvents(); err != nil {
 		return err
 	}
 	return nil
@@ -103,6 +110,30 @@ func (w *OutboxWorker) processProfileSyncEvents() error {
 		}
 		if err := w.profileOutboxRepo.MarkProcessed(event.EventID); err != nil {
 			log.Printf("OutboxWorker mark processed error for event %s: %v", event.EventID, err)
+			continue
+		}
+	}
+	return nil
+}
+
+func (w *OutboxWorker) processUserLifecycleEvents() error {
+	if w.lifecycleOutboxRepo == nil || w.lifecyclePublisher == nil {
+		return nil
+	}
+	events, err := w.lifecycleOutboxRepo.FetchPending(25)
+	if err != nil {
+		return err
+	}
+	for _, event := range events {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		publishErr := w.lifecyclePublisher.PublishLifecycleEvent(ctx, event)
+		cancel()
+		if publishErr != nil {
+			log.Printf("OutboxWorker lifecycle publish error for event %s: %v", event.EventID, publishErr)
+			continue
+		}
+		if err := w.lifecycleOutboxRepo.MarkProcessed(event.EventID); err != nil {
+			log.Printf("OutboxWorker lifecycle mark processed error for event %s: %v", event.EventID, err)
 			continue
 		}
 	}

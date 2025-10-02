@@ -79,7 +79,7 @@ func TestCreateProfileSuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	mock.ExpectQuery("SELECT id FROM users WHERE username=\\$1").
+	mock.ExpectQuery("SELECT id FROM users WHERE username=\\$1 AND is_active = true").
 		WithArgs("john").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 	mock.ExpectQuery("SELECT COALESCE\\(phone_number, ''\\), COALESCE\\(contact_verified, false\\), COALESCE\\(identity_verified, false\\), COALESCE\\(verified, false\\) FROM profiles WHERE user_id = \\$1").
@@ -161,7 +161,7 @@ func TestGetProfileSuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	mock.ExpectQuery("SELECT id FROM users WHERE username=\\$1").
+	mock.ExpectQuery("SELECT id FROM users WHERE username=\\$1 AND is_active = true").
 		WithArgs("john").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 	mock.ExpectQuery("SELECT p.id, p.user_id").

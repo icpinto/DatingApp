@@ -1,9 +1,14 @@
 package services
 
 import (
+	"context"
 	"database/sql"
+	"encoding/json"
 	"log"
+	"strings"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/icpinto/dating-app/models"
 	"github.com/icpinto/dating-app/repositories"
 	"github.com/icpinto/dating-app/utils"
@@ -11,12 +16,13 @@ import (
 
 // UserService provides user related operations.
 type UserService struct {
-	db *sql.DB
+	db                  *sql.DB
+	lifecycleOutboxRepo *repositories.UserLifecycleOutboxRepository
 }
 
 // NewUserService creates a new UserService with the given database handle.
 func NewUserService(db *sql.DB) *UserService {
-	return &UserService{db: db}
+	return &UserService{db: db, lifecycleOutboxRepo: repositories.NewUserLifecycleOutboxRepository(db)}
 }
 
 // GetUsepwd retrieves the hashed password and user ID for a username.
@@ -59,4 +65,69 @@ func (s *UserService) GetUsernameByID(userID int) (string, error) {
 		log.Printf("GetUsernameByID service error for %d: %v", userID, err)
 	}
 	return username, err
+}
+
+// DeactivateUser marks the account inactive and enqueues a lifecycle event for downstream cleanup.
+func (s *UserService) DeactivateUser(ctx context.Context, userID int, reason string) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if err := repositories.DeactivateUserTx(tx, userID); err != nil {
+		return err
+	}
+
+	event, err := s.buildLifecycleEvent(userID, models.UserLifecycleEventTypeDeactivated, reason)
+	if err != nil {
+		return err
+	}
+	if err := s.lifecycleOutboxRepo.EnqueueTx(tx, event); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// DeleteUser removes the account and enqueues a deletion lifecycle event.
+func (s *UserService) DeleteUser(ctx context.Context, userID int, reason string) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	event, err := s.buildLifecycleEvent(userID, models.UserLifecycleEventTypeDeleted, reason)
+	if err != nil {
+		return err
+	}
+	if err := s.lifecycleOutboxRepo.EnqueueTx(tx, event); err != nil {
+		return err
+	}
+
+	if err := repositories.DeleteUserTx(tx, userID); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (s *UserService) buildLifecycleEvent(userID int, eventType models.UserLifecycleEventType, reason string) (models.UserLifecycleOutbox, error) {
+	payload := make(map[string]string)
+	trimmed := strings.TrimSpace(reason)
+	if trimmed != "" {
+		payload["reason"] = trimmed
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return models.UserLifecycleOutbox{}, err
+	}
+	return models.UserLifecycleOutbox{
+		EventID:   uuid.NewString(),
+		UserID:    userID,
+		EventType: eventType,
+		Payload:   body,
+		CreatedAt: time.Now().UTC(),
+	}, nil
 }
