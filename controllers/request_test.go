@@ -44,10 +44,10 @@ func TestSendFriendRequestSuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	mock.ExpectQuery("SELECT id FROM users WHERE username=\\$1").
+	mock.ExpectQuery("SELECT id FROM users WHERE username=\\$1 AND is_active = true").
 		WithArgs("john").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
-	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1").
+	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1 AND is_active = true").
 		WithArgs(2).
 		WillReturnRows(sqlmock.NewRows([]string{"username"}).AddRow("jane"))
 	mock.ExpectQuery("SELECT status FROM friend_requests WHERE sender_id = \\$1 AND receiver_id = \\$2").
@@ -80,10 +80,10 @@ func TestSendFriendRequestDuplicate(t *testing.T) {
 	}
 	defer db.Close()
 
-	mock.ExpectQuery("SELECT id FROM users WHERE username=\\$1").
+	mock.ExpectQuery("SELECT id FROM users WHERE username=\\$1 AND is_active = true").
 		WithArgs("john").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
-	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1").
+	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1 AND is_active = true").
 		WithArgs(2).
 		WillReturnRows(sqlmock.NewRows([]string{"username"}).AddRow("jane"))
 	mock.ExpectQuery("SELECT status FROM friend_requests WHERE sender_id = \\$1 AND receiver_id = \\$2").
@@ -175,17 +175,17 @@ func TestGetPendingRequestsSuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	mock.ExpectQuery("SELECT id FROM users WHERE username=\\$1").
+	mock.ExpectQuery("SELECT id FROM users WHERE username=\\$1 AND is_active = true").
 		WithArgs("john").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 	mock.ExpectQuery("SELECT id, sender_id, sender_username, receiver_id, receiver_username, status, description, created_at FROM friend_requests WHERE receiver_id = \\$1 AND status = 'pending'").
 		WithArgs(1).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "sender_id", "sender_username", "receiver_id", "receiver_username", "status", "description", "created_at"}).
 			AddRow(10, 2, "", 1, "", "pending", "Hello!", time.Now()))
-	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1").
+	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1 AND is_active = true").
 		WithArgs(2).
 		WillReturnRows(sqlmock.NewRows([]string{"username"}).AddRow("alice"))
-	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1").
+	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1 AND is_active = true").
 		WithArgs(1).
 		WillReturnRows(sqlmock.NewRows([]string{"username"}).AddRow("john"))
 
@@ -212,17 +212,17 @@ func TestGetSentRequestsSuccess(t *testing.T) {
 
 	now := time.Now()
 
-	mock.ExpectQuery("SELECT id FROM users WHERE username=\\$1").
+	mock.ExpectQuery("SELECT id FROM users WHERE username=\\$1 AND is_active = true").
 		WithArgs("john").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 	mock.ExpectQuery("SELECT id, sender_id, sender_username, receiver_id, receiver_username, status, description, created_at, updated_at FROM friend_requests WHERE sender_id = \\$1").
 		WithArgs(1).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "sender_id", "sender_username", "receiver_id", "receiver_username", "status", "description", "created_at", "updated_at"}).
 			AddRow(11, 1, "", 2, "", "accepted", "Excited to connect", now, now))
-	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1").
+	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1 AND is_active = true").
 		WithArgs(1).
 		WillReturnRows(sqlmock.NewRows([]string{"username"}).AddRow("john"))
-	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1").
+	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1 AND is_active = true").
 		WithArgs(2).
 		WillReturnRows(sqlmock.NewRows([]string{"username"}).AddRow("alice"))
 
@@ -247,7 +247,7 @@ func TestCheckReqStatusSuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	mock.ExpectQuery("SELECT id FROM users WHERE username=\\$1").
+	mock.ExpectQuery("SELECT id FROM users WHERE username=\\$1 AND is_active = true").
 		WithArgs("john").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 	mock.ExpectQuery(`SELECT COUNT\(\*\) FROM friend_requests WHERE sender_id = \$1 AND receiver_id = \$2`).

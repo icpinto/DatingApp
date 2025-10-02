@@ -18,7 +18,7 @@ func GetUserpwdByUsername(db *sql.DB, username string) (string, int, error) {
 	var hashedPassword string
 	var userId int
 
-	err := db.QueryRow("SELECT id, password FROM users WHERE username=$1", username).
+	err := db.QueryRow("SELECT id, password FROM users WHERE username=$1 AND is_active = true", username).
 		Scan(&userId, &hashedPassword)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -45,7 +45,7 @@ func CreateUser(db *sql.DB, user models.User) error {
 
 func GetUserIDByUsername(db *sql.DB, username string) (int, error) {
 	var id int
-	err := db.QueryRow("SELECT id FROM users WHERE username=$1", username).Scan(&id)
+	err := db.QueryRow("SELECT id FROM users WHERE username=$1 AND is_active = true", username).Scan(&id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return 0, ErrUserNotFound
@@ -56,10 +56,9 @@ func GetUserIDByUsername(db *sql.DB, username string) (int, error) {
 	return id, nil
 }
 
-
 func GetUsernameByID(db *sql.DB, userID int) (string, error) {
 	var username string
-	err := db.QueryRow("SELECT username FROM users WHERE id=$1", userID).Scan(&username)
+	err := db.QueryRow("SELECT username FROM users WHERE id=$1 AND is_active = true", userID).Scan(&username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", ErrUserNotFound
@@ -70,4 +69,41 @@ func GetUsernameByID(db *sql.DB, userID int) (string, error) {
 		return "", err
 	}
 	return username, nil
+}
+
+// DeactivateUserTx sets a user's account as inactive within the supplied transaction.
+func DeactivateUserTx(tx *sql.Tx, userID int) error {
+	res, err := tx.Exec(`
+        UPDATE users
+        SET is_active = false, deactivated_at = NOW()
+        WHERE id = $1 AND is_active = true`, userID)
+	if err != nil {
+		log.Printf("DeactivateUserTx exec error for user %d: %v", userID, err)
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return ErrUserNotFound
+	}
+	return nil
+}
+
+// DeleteUserTx hard deletes a user row from the database within the supplied transaction.
+func DeleteUserTx(tx *sql.Tx, userID int) error {
+	res, err := tx.Exec(`DELETE FROM users WHERE id = $1`, userID)
+	if err != nil {
+		log.Printf("DeleteUserTx exec error for user %d: %v", userID, err)
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return ErrUserNotFound
+	}
+	return nil
 }

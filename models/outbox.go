@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -22,4 +23,25 @@ type ProfileSyncOutbox struct {
 	UserID    int       `json:"user_id"`
 	Processed bool      `json:"processed"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+// UserLifecycleEventType enumerates supported lifecycle transitions broadcast to downstream services.
+type UserLifecycleEventType string
+
+const (
+	// UserLifecycleEventTypeDeactivated indicates that the account has been deactivated but not removed.
+	UserLifecycleEventTypeDeactivated UserLifecycleEventType = "deactivated"
+	// UserLifecycleEventTypeDeleted indicates that the account and related data have been removed from the core service.
+	UserLifecycleEventTypeDeleted UserLifecycleEventType = "deleted"
+)
+
+// UserLifecycleOutbox represents lifecycle events (deactivation/deletion) queued for downstream processing.
+type UserLifecycleOutbox struct {
+	EventID     string                 `json:"event_id"`
+	UserID      int                    `json:"user_id"`
+	EventType   UserLifecycleEventType `json:"event_type"`
+	Payload     json.RawMessage        `json:"payload"`
+	Processed   bool                   `json:"processed"`
+	ProcessedAt *time.Time             `json:"processed_at,omitempty"`
+	CreatedAt   time.Time              `json:"created_at"`
 }

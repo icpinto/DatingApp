@@ -41,7 +41,19 @@ func main() {
 	if messagingURL == "" {
 		messagingURL = "http://localhost:8082"
 	}
-	worker := services.NewOutboxWorker(sqlDB, messagingURL, matchService)
+
+	rabbitURL := os.Getenv("RABBITMQ_URL")
+	if rabbitURL == "" {
+		rabbitURL = "amqp://guest:guest@localhost:5672/"
+	}
+	lifecyclePublisher, err := services.NewRabbitMQPublisher(rabbitURL, "")
+	if err != nil {
+		log.Printf("Failed to initialize RabbitMQ publisher: %v", err)
+	} else {
+		defer lifecyclePublisher.Close()
+	}
+
+	worker := services.NewOutboxWorker(sqlDB, messagingURL, matchService, lifecyclePublisher)
 	go worker.Start()
 
 	if err := router.Run(":8080"); err != nil {
@@ -93,6 +105,8 @@ func setupRouter(sqlDB *sql.DB, matchService *services.MatchService) *gin.Engine
 	protected.POST("/core-preferences", controllers.SaveCorePreferences)
 	protected.GET("/core-preferences", controllers.GetCorePreferences)
 	protected.PUT("/core-preferences", controllers.UpdateCorePreferences)
+	protected.POST("/deactivate", controllers.DeactivateCurrentUser)
+	protected.DELETE("", controllers.DeleteCurrentUser)
 
 	// Allow authenticated users to retrieve profile enumerations via /user/profile/enums
 	protected.GET("/profile/enums", controllers.GetProfileEnums)

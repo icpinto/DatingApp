@@ -134,7 +134,7 @@ func (r *ProfileRepository) GetByUserID(userID int) (models.UserProfile, error) 
               COALESCE(p.horoscope_available, false), COALESCE(p.birth_time::text, ''), COALESCE(p.birth_place, ''), COALESCE(p.sinhala_raasi, ''), COALESCE(p.nakshatra, ''), COALESCE(p.horoscope::text, ''),
               COALESCE(p.profile_image_url, ''), COALESCE(p.profile_image_thumb_url, ''), COALESCE(p.verified, false), COALESCE(p.moderation_status, ''), COALESCE(p.last_active_at::text, ''), COALESCE(p.metadata::text, ''),
               p.created_at, p.updated_at
-       FROM profiles p JOIN users u ON p.user_id = u.id WHERE p.user_id = $1`, userID).Scan(
+       FROM profiles p JOIN users u ON p.user_id = u.id WHERE p.user_id = $1 AND u.is_active = true`, userID).Scan(
 		&profile.ID, &profile.UserID, &profile.Username, &profile.Bio, &profile.Gender,
 		&profile.DateOfBirth, &profile.LocationLegacy, pq.Array(&profile.Interests),
 		&profile.CivilStatus, &profile.Religion, &profile.ReligionDetail, &profile.Caste,
@@ -182,7 +182,7 @@ func (r *ProfileRepository) GetByUserIDs(userIDs []int) (map[int]models.UserProf
               COALESCE(p.horoscope_available, false), COALESCE(p.birth_time::text, ''), COALESCE(p.birth_place, ''), COALESCE(p.sinhala_raasi, ''), COALESCE(p.nakshatra, ''), COALESCE(p.horoscope::text, ''),
               COALESCE(p.profile_image_url, ''), COALESCE(p.profile_image_thumb_url, ''), COALESCE(p.verified, false), COALESCE(p.moderation_status, ''), COALESCE(p.last_active_at::text, ''), COALESCE(p.metadata::text, ''),
               p.created_at, p.updated_at
-       FROM profiles p JOIN users u ON p.user_id = u.id WHERE p.user_id = ANY($1)`, pq.Array(userIDs))
+       FROM profiles p JOIN users u ON p.user_id = u.id WHERE p.user_id = ANY($1) AND u.is_active = true`, pq.Array(userIDs))
 	if err != nil {
 		log.Printf("ProfileRepository.GetByUserIDs query error: %v", err)
 		return nil, err
@@ -231,12 +231,13 @@ func (r *ProfileRepository) GetAllWithFilters(filters models.ProfileFilters) ([]
               COALESCE(p.height_cm, 0), COALESCE(p.weight_kg, 0), COALESCE(p.dietary_preference::text, ''), COALESCE(p.smoking::text, ''), COALESCE(p.alcohol::text, ''),
               COALESCE(p.languages, ARRAY[]::text[]), COALESCE(p.phone_number, ''), COALESCE(p.contact_verified, false), COALESCE(p.identity_verified, false),
               COALESCE(p.country_code, ''), COALESCE(p.province, ''), COALESCE(p.district, ''), COALESCE(p.city, ''), COALESCE(p.postal_code, ''),
-                      COALESCE(p.highest_education::text, ''), COALESCE(p.field_of_study, ''), COALESCE(p.institution, ''), COALESCE(p.employment_status::text, ''), COALESCE(p.occupation, ''),
-                      COALESCE(p.father_occupation, ''), COALESCE(p.mother_occupation, ''), COALESCE(p.siblings_count, 0), COALESCE(p.siblings::text, ''),
-                      COALESCE(p.horoscope_available, false), COALESCE(p.birth_time::text, ''), COALESCE(p.birth_place, ''), COALESCE(p.sinhala_raasi, ''), COALESCE(p.nakshatra, ''), COALESCE(p.horoscope::text, ''),
-                      COALESCE(p.profile_image_url, ''), COALESCE(p.profile_image_thumb_url, ''), COALESCE(p.verified, false), COALESCE(p.moderation_status, ''), COALESCE(p.last_active_at::text, ''), COALESCE(p.metadata::text, ''),
-                      p.created_at, p.updated_at
-               FROM profiles p JOIN users u ON p.user_id = u.id`
+              COALESCE(p.highest_education::text, ''), COALESCE(p.field_of_study, ''), COALESCE(p.institution, ''), COALESCE(p.employment_status::text, ''), COALESCE(p.occupation, ''),
+              COALESCE(p.father_occupation, ''), COALESCE(p.mother_occupation, ''), COALESCE(p.siblings_count, 0), COALESCE(p.siblings::text, ''),
+              COALESCE(p.horoscope_available, false), COALESCE(p.birth_time::text, ''), COALESCE(p.birth_place, ''), COALESCE(p.sinhala_raasi, ''), COALESCE(p.nakshatra, ''), COALESCE(p.horoscope::text, ''),
+              COALESCE(p.profile_image_url, ''), COALESCE(p.profile_image_thumb_url, ''), COALESCE(p.verified, false), COALESCE(p.moderation_status, ''), COALESCE(p.last_active_at::text, ''), COALESCE(p.metadata::text, ''),
+              p.created_at, p.updated_at
+       FROM profiles p JOIN users u ON p.user_id = u.id
+       WHERE u.is_active = true`
 
 	var conditions []string
 	var args []interface{}
@@ -295,7 +296,7 @@ func (r *ProfileRepository) GetAllWithFilters(filters models.ProfileFilters) ([]
 
 	query := baseQuery
 	if len(conditions) > 0 {
-		query = fmt.Sprintf("%s WHERE %s", baseQuery, strings.Join(conditions, " AND "))
+		query = fmt.Sprintf("%s AND %s", baseQuery, strings.Join(conditions, " AND "))
 	}
 
 	rows, err := r.db.Query(query, args...)
