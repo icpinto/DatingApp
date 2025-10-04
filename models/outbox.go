@@ -31,6 +31,8 @@ type UserLifecycleEventType string
 const (
 	// UserLifecycleEventTypeDeactivated indicates that the account has been deactivated but not removed.
 	UserLifecycleEventTypeDeactivated UserLifecycleEventType = "deactivated"
+	// UserLifecycleEventTypeReactivated indicates that the account has been reactivated and should be restored downstream.
+	UserLifecycleEventTypeReactivated UserLifecycleEventType = "reactivated"
 	// UserLifecycleEventTypeDeleted indicates that the account and related data have been removed from the core service.
 	UserLifecycleEventTypeDeleted UserLifecycleEventType = "deleted"
 )

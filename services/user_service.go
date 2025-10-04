@@ -90,6 +90,29 @@ func (s *UserService) DeactivateUser(ctx context.Context, userID int, reason str
 	return tx.Commit()
 }
 
+// ReactivateUser marks the account active again and enqueues a lifecycle event for downstream restoration.
+func (s *UserService) ReactivateUser(ctx context.Context, userID int, reason string) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if err := repositories.ReactivateUserTx(tx, userID); err != nil {
+		return err
+	}
+
+	event, err := s.buildLifecycleEvent(userID, models.UserLifecycleEventTypeReactivated, reason)
+	if err != nil {
+		return err
+	}
+	if err := s.lifecycleOutboxRepo.EnqueueTx(tx, event); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
 // DeleteUser removes the account and enqueues a deletion lifecycle event.
 func (s *UserService) DeleteUser(ctx context.Context, userID int, reason string) error {
 	tx, err := s.db.BeginTx(ctx, nil)

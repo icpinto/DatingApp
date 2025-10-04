@@ -91,6 +91,26 @@ func DeactivateUserTx(tx *sql.Tx, userID int) error {
 	return nil
 }
 
+// ReactivateUserTx sets a user's account as active within the supplied transaction.
+func ReactivateUserTx(tx *sql.Tx, userID int) error {
+	res, err := tx.Exec(`
+        UPDATE users
+        SET is_active = true, deactivated_at = NULL
+        WHERE id = $1 AND is_active = false`, userID)
+	if err != nil {
+		log.Printf("ReactivateUserTx exec error for user %d: %v", userID, err)
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return ErrUserNotFound
+	}
+	return nil
+}
+
 // DeleteUserTx hard deletes a user row from the database within the supplied transaction.
 func DeleteUserTx(tx *sql.Tx, userID int) error {
 	res, err := tx.Exec(`DELETE FROM users WHERE id = $1`, userID)

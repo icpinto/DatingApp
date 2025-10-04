@@ -105,8 +105,9 @@ func setupRouter(sqlDB *sql.DB, matchService *services.MatchService) *gin.Engine
 	protected.POST("/core-preferences", controllers.SaveCorePreferences)
 	protected.GET("/core-preferences", controllers.GetCorePreferences)
 	protected.PUT("/core-preferences", controllers.UpdateCorePreferences)
-	protected.POST("/deactivate", controllers.DeactivateCurrentUser)
-	protected.DELETE("", controllers.DeleteCurrentUser)
+        protected.POST("/deactivate", controllers.DeactivateCurrentUser)
+        protected.POST("/reactivate", controllers.ReactivateCurrentUser)
+        protected.DELETE("", controllers.DeleteCurrentUser)
 
 	// Allow authenticated users to retrieve profile enumerations via /user/profile/enums
 	protected.GET("/profile/enums", controllers.GetProfileEnums)
