@@ -62,6 +62,8 @@ func allowsInactiveAccess(c *gin.Context) bool {
 	switch c.FullPath() {
 	case "/user/reactivate":
 		return true
+	case "/user/status":
+		return true
 	default:
 		return false
 	}
