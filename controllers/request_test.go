@@ -203,7 +203,7 @@ func TestGetPendingRequestsSuccess(t *testing.T) {
 	}
 }
 
-func TestGetPendingRequestsInactiveUserSuccess(t *testing.T) {
+func TestGetPendingRequestsSkipsInactiveSender(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("error creating sqlmock: %v", err)
@@ -212,9 +212,6 @@ func TestGetPendingRequestsInactiveUserSuccess(t *testing.T) {
 
 	mock.ExpectQuery("SELECT id FROM users WHERE username=\\$1 AND is_active = true").
 		WithArgs("john").
-		WillReturnError(sql.ErrNoRows)
-	mock.ExpectQuery("SELECT id FROM users WHERE username=\\$1").
-		WithArgs("john").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 	mock.ExpectQuery("SELECT id, sender_id, sender_username, receiver_id, receiver_username, status, description, created_at FROM friend_requests WHERE receiver_id = \\$1 AND status = 'pending'").
 		WithArgs(1).
@@ -222,13 +219,7 @@ func TestGetPendingRequestsInactiveUserSuccess(t *testing.T) {
 			AddRow(10, 2, "", 1, "", "pending", "Hello!", time.Now()))
 	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1 AND is_active = true").
 		WithArgs(2).
-		WillReturnRows(sqlmock.NewRows([]string{"username"}).AddRow("alice"))
-	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1 AND is_active = true").
-		WithArgs(1).
 		WillReturnError(sql.ErrNoRows)
-	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1").
-		WithArgs(1).
-		WillReturnRows(sqlmock.NewRows([]string{"username"}).AddRow("john"))
 
 	router := setupRequestRouter(db, true)
 
@@ -238,6 +229,16 @@ func TestGetPendingRequestsInactiveUserSuccess(t *testing.T) {
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected status 200 got %d: %s", w.Code, w.Body.String())
+	}
+
+	var resp struct {
+		Requests []models.FriendRequest `json:"requests"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+	if len(resp.Requests) != 0 {
+		t.Fatalf("expected no requests, got %+v", resp.Requests)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("unmet db expectations: %v", err)
