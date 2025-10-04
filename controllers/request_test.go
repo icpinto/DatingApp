@@ -203,6 +203,47 @@ func TestGetPendingRequestsSuccess(t *testing.T) {
 	}
 }
 
+func TestGetPendingRequestsInactiveUserSuccess(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("error creating sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	mock.ExpectQuery("SELECT id FROM users WHERE username=\\$1 AND is_active = true").
+		WithArgs("john").
+		WillReturnError(sql.ErrNoRows)
+	mock.ExpectQuery("SELECT id FROM users WHERE username=\\$1").
+		WithArgs("john").
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+	mock.ExpectQuery("SELECT id, sender_id, sender_username, receiver_id, receiver_username, status, description, created_at FROM friend_requests WHERE receiver_id = \\$1 AND status = 'pending'").
+		WithArgs(1).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "sender_id", "sender_username", "receiver_id", "receiver_username", "status", "description", "created_at"}).
+			AddRow(10, 2, "", 1, "", "pending", "Hello!", time.Now()))
+	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1 AND is_active = true").
+		WithArgs(2).
+		WillReturnRows(sqlmock.NewRows([]string{"username"}).AddRow("alice"))
+	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1 AND is_active = true").
+		WithArgs(1).
+		WillReturnError(sql.ErrNoRows)
+	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1").
+		WithArgs(1).
+		WillReturnRows(sqlmock.NewRows([]string{"username"}).AddRow("john"))
+
+	router := setupRequestRouter(db, true)
+
+	req := httptest.NewRequest(http.MethodGet, "/requests", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200 got %d: %s", w.Code, w.Body.String())
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet db expectations: %v", err)
+	}
+}
+
 func TestGetSentRequestsSuccess(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -220,6 +261,49 @@ func TestGetSentRequestsSuccess(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"id", "sender_id", "sender_username", "receiver_id", "receiver_username", "status", "description", "created_at", "updated_at"}).
 			AddRow(11, 1, "", 2, "", "accepted", "Excited to connect", now, now))
 	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1 AND is_active = true").
+		WithArgs(1).
+		WillReturnRows(sqlmock.NewRows([]string{"username"}).AddRow("john"))
+	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1 AND is_active = true").
+		WithArgs(2).
+		WillReturnRows(sqlmock.NewRows([]string{"username"}).AddRow("alice"))
+
+	router := setupRequestRouter(db, true)
+
+	req := httptest.NewRequest(http.MethodGet, "/sentRequests", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200 got %d: %s", w.Code, w.Body.String())
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet db expectations: %v", err)
+	}
+}
+
+func TestGetSentRequestsInactiveUserSuccess(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("error creating sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	now := time.Now()
+
+	mock.ExpectQuery("SELECT id FROM users WHERE username=\\$1 AND is_active = true").
+		WithArgs("john").
+		WillReturnError(sql.ErrNoRows)
+	mock.ExpectQuery("SELECT id FROM users WHERE username=\\$1").
+		WithArgs("john").
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+	mock.ExpectQuery("SELECT id, sender_id, sender_username, receiver_id, receiver_username, status, description, created_at, updated_at FROM friend_requests WHERE sender_id = \\$1").
+		WithArgs(1).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "sender_id", "sender_username", "receiver_id", "receiver_username", "status", "description", "created_at", "updated_at"}).
+			AddRow(10, 1, "", 2, "", "pending", "Hello!", now, now))
+	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1 AND is_active = true").
+		WithArgs(1).
+		WillReturnError(sql.ErrNoRows)
+	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1").
 		WithArgs(1).
 		WillReturnRows(sqlmock.NewRows([]string{"username"}).AddRow("john"))
 	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1 AND is_active = true").
