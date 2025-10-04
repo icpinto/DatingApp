@@ -22,7 +22,7 @@ func setupAuthRouter(db *sql.DB) *gin.Engine {
 	return router
 }
 
-func TestAuthenticateAllowsInactiveUserForReadRoutes(t *testing.T) {
+func TestAuthenticateAllowsInactiveUserForRequestListingRoutes(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("error creating sqlmock: %v", err)
@@ -37,7 +37,7 @@ func TestAuthenticateAllowsInactiveUserForReadRoutes(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"username"}).AddRow("inactive_jane"))
 
 	router := setupAuthRouter(db)
-	router.GET("/user/matches/:user_id", middlewares.Authenticate, func(c *gin.Context) {
+	router.GET("/user/requests", middlewares.Authenticate, func(c *gin.Context) {
 		username := c.GetString("username")
 		c.JSON(http.StatusOK, gin.H{"username": username})
 	})
@@ -47,7 +47,7 @@ func TestAuthenticateAllowsInactiveUserForReadRoutes(t *testing.T) {
 		t.Fatalf("error generating token: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/user/matches/42", nil)
+	req := httptest.NewRequest(http.MethodGet, "/user/requests", nil)
 	req.Header.Set("Authorization", token)
 
 	w := httptest.NewRecorder()
@@ -58,6 +58,46 @@ func TestAuthenticateAllowsInactiveUserForReadRoutes(t *testing.T) {
 	}
 	if !strings.Contains(w.Body.String(), "inactive_jane") {
 		t.Fatalf("expected response to include username, got: %s", w.Body.String())
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet db expectations: %v", err)
+	}
+}
+
+func TestAuthenticateBlocksInactiveUserForDisallowedReadRoutes(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("error creating sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1 AND is_active = true").
+		WithArgs(99).
+		WillReturnError(sql.ErrNoRows)
+
+	router := setupAuthRouter(db)
+	handlerCalled := false
+	router.GET("/user/profile", middlewares.Authenticate, func(c *gin.Context) {
+		handlerCalled = true
+		c.Status(http.StatusOK)
+	})
+
+	token, err := utils.GenerateToken(99)
+	if err != nil {
+		t.Fatalf("error generating token: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/user/profile", nil)
+	req.Header.Set("Authorization", token)
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected status 401 got %d: %s", w.Code, w.Body.String())
+	}
+	if handlerCalled {
+		t.Fatalf("handler should not be called for disallowed inactive read access")
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("unmet db expectations: %v", err)

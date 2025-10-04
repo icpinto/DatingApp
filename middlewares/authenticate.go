@@ -3,7 +3,6 @@ package middlewares
 import (
 	"errors"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
@@ -66,19 +65,8 @@ func allowsInactiveAccess(c *gin.Context) bool {
 	}
 
 	switch path {
-	case "/user/matches/:user_id",
-		"/user/profile",
-		"/user/profiles",
-		"/user/profile/:user_id",
-		"/user/core-preferences",
-		"/user/profile/enums",
-		"/user/requests",
-		"/user/sentRequests",
-		"/user/checkReqStatus/:reciver_id":
-		return true
-	}
-
-	if strings.HasPrefix(path, "/user/messages") {
+	case "/user/requests",
+		"/user/sentRequests":
 		return true
 	}
 
