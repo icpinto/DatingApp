@@ -55,3 +55,8 @@ type FriendRequestsResponse struct {
 type FriendRequestStatusResponse struct {
 	RequestStatus bool `json:"requestStatus"`
 }
+
+// UserStatusResponse represents a user's activation status.
+type UserStatusResponse struct {
+	Status string `json:"status"`
+}
