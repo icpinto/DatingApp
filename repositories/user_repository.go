@@ -71,6 +71,20 @@ func GetUsernameByID(db *sql.DB, userID int) (string, error) {
 	return username, nil
 }
 
+// GetUsernameByIDAllowInactive returns the username even if the account is inactive.
+func GetUsernameByIDAllowInactive(db *sql.DB, userID int) (string, error) {
+	var username string
+	err := db.QueryRow("SELECT username FROM users WHERE id=$1", userID).Scan(&username)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", ErrUserNotFound
+		}
+		log.Printf("GetUsernameByIDAllowInactive query error for %d: %v", userID, err)
+		return "", err
+	}
+	return username, nil
+}
+
 // GetUserStatusByID returns whether the specified user is currently active.
 func GetUserStatusByID(db *sql.DB, userID int) (bool, error) {
 	var isActive bool

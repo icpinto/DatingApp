@@ -3,6 +3,7 @@ package middlewares
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
@@ -40,17 +41,13 @@ func Authenticate(c *gin.Context) {
 	username, err := userService.GetUsernameByID(claims.UserID)
 	if err != nil {
 		if errors.Is(err, repositories.ErrUserNotFound) && allowsInactiveAccess(c) {
-			// Allow specific routes (such as reactivation) to proceed even when the
-			// account is currently inactive. These handlers rely on the user ID from
-			// the token and do not require an active username lookup.
-			c.Set("username", "")
-			c.Next()
+			username, err = userService.GetUsernameByIDAllowInactive(claims.UserID)
+		}
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			c.Abort()
 			return
 		}
-
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-		c.Abort()
-		return
 	}
 
 	c.Set("username", username)
@@ -59,12 +56,31 @@ func Authenticate(c *gin.Context) {
 }
 
 func allowsInactiveAccess(c *gin.Context) bool {
-	switch c.FullPath() {
-	case "/user/reactivate":
+	path := c.FullPath()
+	if path == "/user/reactivate" || path == "/user/status" {
 		return true
-	case "/user/status":
-		return true
-	default:
+	}
+
+	if c.Request.Method != http.MethodGet {
 		return false
 	}
+
+	switch path {
+	case "/user/matches/:user_id",
+		"/user/profile",
+		"/user/profiles",
+		"/user/profile/:user_id",
+		"/user/core-preferences",
+		"/user/profile/enums",
+		"/user/requests",
+		"/user/sentRequests",
+		"/user/checkReqStatus/:reciver_id":
+		return true
+	}
+
+	if strings.HasPrefix(path, "/user/messages") {
+		return true
+	}
+
+	return false
 }
