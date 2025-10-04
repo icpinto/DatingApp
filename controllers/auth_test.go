@@ -94,7 +94,7 @@ func TestLoginSuccess(t *testing.T) {
 		t.Fatalf("hash error: %v", err)
 	}
 
-	mock.ExpectQuery("SELECT id, password FROM users WHERE username=\\$1 AND is_active = true").
+	mock.ExpectQuery("SELECT id, password FROM users WHERE username=\\$1").
 		WithArgs("john").
 		WillReturnRows(sqlmock.NewRows([]string{"id", "password"}).AddRow(1, hashed))
 
@@ -124,7 +124,7 @@ func TestLoginUserNotFound(t *testing.T) {
 	}
 	defer db.Close()
 
-	mock.ExpectQuery("SELECT id, password FROM users WHERE username=\\$1 AND is_active = true").
+	mock.ExpectQuery("SELECT id, password FROM users WHERE username=\\$1").
 		WithArgs("missing").
 		WillReturnError(sql.ErrNoRows)
 
@@ -156,7 +156,7 @@ func TestLoginInvalidPassword(t *testing.T) {
 		t.Fatalf("hash error: %v", err)
 	}
 
-	mock.ExpectQuery("SELECT id, password FROM users WHERE username=\\$1 AND is_active = true").
+	mock.ExpectQuery("SELECT id, password FROM users WHERE username=\\$1").
 		WithArgs("john").
 		WillReturnRows(sqlmock.NewRows([]string{"id", "password"}).AddRow(1, hashed))
 
@@ -170,6 +170,55 @@ func TestLoginInvalidPassword(t *testing.T) {
 
 	if w.Code != http.StatusUnauthorized {
 		t.Fatalf("expected status 401 got %d: %s", w.Code, w.Body.String())
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet db expectations: %v", err)
+	}
+}
+
+func TestReactivateAllowsInactiveUser(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("error creating sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1 AND is_active = true").
+		WithArgs(1).
+		WillReturnError(sql.ErrNoRows)
+
+	mock.ExpectBegin()
+	mock.ExpectExec("\\s*UPDATE users\\s+SET is_active = true, deactivated_at = NULL\\s+WHERE id = \\$1 AND is_active = false").
+		WithArgs(1).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	mock.ExpectExec("\\s*INSERT INTO user_lifecycle_outbox").
+		WithArgs(sqlmock.AnyArg(), 1, "reactivated", sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	mock.ExpectCommit()
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	userService := services.NewUserService(db)
+	router.Use(middlewares.ServiceMiddleware(middlewares.Services{UserService: userService}))
+	router.POST("/user/reactivate", middlewares.Authenticate, controllers.ReactivateCurrentUser)
+
+	token, err := utils.GenerateToken(1)
+	if err != nil {
+		t.Fatalf("error generating token: %v", err)
+	}
+
+	body := []byte(`{"reason":"let me back"}`)
+	req := httptest.NewRequest(http.MethodPost, "/user/reactivate", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", token)
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusAccepted {
+		t.Fatalf("expected status 202 got %d: %s", w.Code, w.Body.String())
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("unmet db expectations: %v", err)

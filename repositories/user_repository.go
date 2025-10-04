@@ -18,7 +18,7 @@ func GetUserpwdByUsername(db *sql.DB, username string) (string, int, error) {
 	var hashedPassword string
 	var userId int
 
-	err := db.QueryRow("SELECT id, password FROM users WHERE username=$1 AND is_active = true", username).
+	err := db.QueryRow("SELECT id, password FROM users WHERE username=$1", username).
 		Scan(&userId, &hashedPassword)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
