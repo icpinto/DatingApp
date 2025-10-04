@@ -67,6 +67,15 @@ func (s *UserService) GetUsernameByID(userID int) (string, error) {
 	return username, err
 }
 
+// GetUserStatus returns whether the provided user account is active.
+func (s *UserService) GetUserStatus(userID int) (bool, error) {
+	isActive, err := repositories.GetUserStatusByID(s.db, userID)
+	if err != nil {
+		log.Printf("GetUserStatus service error for %d: %v", userID, err)
+	}
+	return isActive, err
+}
+
 // DeactivateUser marks the account inactive and enqueues a lifecycle event for downstream cleanup.
 func (s *UserService) DeactivateUser(ctx context.Context, userID int, reason string) error {
 	tx, err := s.db.BeginTx(ctx, nil)

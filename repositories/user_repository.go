@@ -71,6 +71,20 @@ func GetUsernameByID(db *sql.DB, userID int) (string, error) {
 	return username, nil
 }
 
+// GetUserStatusByID returns whether the specified user is currently active.
+func GetUserStatusByID(db *sql.DB, userID int) (bool, error) {
+	var isActive bool
+	err := db.QueryRow("SELECT is_active FROM users WHERE id=$1", userID).Scan(&isActive)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, ErrUserNotFound
+		}
+		log.Printf("GetUserStatusByID query error for %d: %v", userID, err)
+		return false, err
+	}
+	return isActive, nil
+}
+
 // DeactivateUserTx sets a user's account as inactive within the supplied transaction.
 func DeactivateUserTx(tx *sql.Tx, userID int) error {
 	res, err := tx.Exec(`
