@@ -187,6 +187,10 @@ func TestReactivateAllowsInactiveUser(t *testing.T) {
 		WithArgs(1).
 		WillReturnError(sql.ErrNoRows)
 
+	mock.ExpectQuery("SELECT username FROM users WHERE id=\\$1").
+		WithArgs(1).
+		WillReturnRows(sqlmock.NewRows([]string{"username"}).AddRow("john"))
+
 	mock.ExpectBegin()
 	mock.ExpectExec("\\s*UPDATE users\\s+SET is_active = true, deactivated_at = NULL\\s+WHERE id = \\$1 AND is_active = false").
 		WithArgs(1).

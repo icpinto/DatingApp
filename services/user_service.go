@@ -67,6 +67,15 @@ func (s *UserService) GetUsernameByID(userID int) (string, error) {
 	return username, err
 }
 
+// GetUsernameByIDAllowInactive returns the username for the given user ID regardless of account status.
+func (s *UserService) GetUsernameByIDAllowInactive(userID int) (string, error) {
+	username, err := repositories.GetUsernameByIDAllowInactive(s.db, userID)
+	if err != nil {
+		log.Printf("GetUsernameByIDAllowInactive service error for %d: %v", userID, err)
+	}
+	return username, err
+}
+
 // GetUserStatus returns whether the provided user account is active.
 func (s *UserService) GetUserStatus(userID int) (bool, error) {
 	isActive, err := repositories.GetUserStatusByID(s.db, userID)
